@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Confirm only the bootstrap payloads differ from the original v5 package."""
+"""Confirm only the bootstrap payloads differ from the supplied W103D base."""
 import argparse,hashlib,json,pathlib,struct,subprocess,tempfile
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('work',type=pathlib.Path,help='W102D assembly directory')
-parser.add_argument('base',type=pathlib.Path,help='verified W103D v5 assembly directory')
+parser.add_argument('base',type=pathlib.Path,help='verified W103D assembly directory')
 args=parser.parse_args()
 w=args.work
 b=args.base
@@ -32,8 +32,9 @@ with tempfile.TemporaryDirectory() as t:
     p=pathlib.Path(t)/'vendor.dtb';p.write_bytes(dtb[offset:offset+size])
     data_size=subprocess.check_output(['fdtget','-t','x',str(p),'/partitions/data','size'],text=True).strip()
     assert data_size=='ffffffff ffffffff',data_size
-result=dict(capacity_only_trial=True,changed_container_items=changed,rootfs_identical_to_v5=True,
- bootfs_identical_to_v5=True,vendor_kernel_identical=True,vendor_dtb_data_partition='remaining capacity',
+result=dict(capacity_only_trial=True,changed_container_items=changed,rootfs_identical_to_base=True,
+ bootfs_identical_to_base=True,base_image=old['image'],base_sha256=old['sha256'],
+ vendor_kernel_identical=True,vendor_dtb_data_partition='remaining capacity',
  emmc_capacity_source='runtime sysfs sector count, checked against on-device EPT',
  accepted_sectors_min=28000000,accepted_sectors_max=33554432,
  root_partition_start_sector=1954*1024*1024//512,root_partition_end='actual device end',

@@ -1,7 +1,7 @@
 # W102D 2 GB / 16 GB capacity trial
 
-This experimental USB Burning Tool recipe derives from W103D KDE v5 at
-`2bf9c0b34c1a6086a8b86a6ba90c81fc184a6947`. The owner reports that W102D and
+The v2 recipe derives from the pairing-fixed W103D KDE v6 assembly. The original
+v1 used W103D v5 at `2bf9c0b34c1a6086a8b86a6ba90c81fc184a6947`. The owner reports that W102D and
 W103D use the same factory flashing package. This trial changes only eMMC
 capacity handling; **W102D hardware boot has not yet been verified**.
 
@@ -16,7 +16,7 @@ checks are retained. Malformed or out-of-range capacities are rejected.
 
 DDR/U-Boot, vendor kernel, vendor DTB, Linux 6.18.49-ophub, MT7663S driver and
 firmware, root filesystem, boot filesystem, logo and desktop settings remain
-identical to W103D v5. Internal W103D board identity, environment boot command
+identical to the supplied W103D base (v6 for this release). Internal W103D board identity, environment boot command
 names and filesystem labels intentionally remain unchanged for this trial.
 The 8 GiB initial root filesystem fits the 16 GB layout and expands on first
 startup. See [the W103D recipe](../../w103d/burn/README.md) for shared boot
@@ -25,21 +25,27 @@ design, prerequisites and binary provenance.
 ## Build and verify
 
 Use Linux, Python 3.11+, clang/lld, qemu-arm-static, device-tree-compiler and
-the existing Khadas packer. First prepare and verify a clean W103D v5 assembly
-using [the desktop recipe](../../w103d/burn/desktop/README.md). Keep its raw
+the existing Khadas packer. First prepare and verify a clean W103D v6 assembly
+using [the pairing fix recipe](../../w103d/fixes/bluedevil/README.md). Keep its raw
 files, payloads and `checks/final-package.json`. Supply the same logo BMP.
 The W102D output directory must not exist and must be on the same filesystem
 as the base: unchanged inputs are hardlinked and must remain immutable.
 
 ```sh
 bash board/w102d/burn/build.sh \
-  /work/w103d-v5 /work/w102d-v1 /work/khadas-tools /work/bootup.bmp
+  /work/w103d-v6 /work/w102d-v2 /work/khadas-tools /work/bootup.bmp
 ```
 
 The build runs 26 ARM provisioning tests, produces the new bootstrap, packs
 and verifies the container, and checks that only boot/recovery and their
 VERIFY items differ from the base. Shared packaging utilities are reused
 directly from `board/w103d/burn`. No kernel module is rebuilt.
+
+v2 inherits BlueDevil `4:6.3.4-2+w103d1`, which removes the wizard's unconditional
+disconnect after pairing (KDE `dff9c79c`). This addresses the GUI keyboard pairing
+failure verified on W103D. It also inherits the pin preventing replacement by an
+unvalidated BlueDevil version. The 16 GB provisioning logic is unchanged from v1.
+This shared userspace repair has not yet been tested on W102D hardware.
 
 To run the provisioning tests independently:
 
