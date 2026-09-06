@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# im-config's Wayland login hook runs before Plasma. Let KWin own Fcitx on
+# Wayland; retain the normal im-config launcher for an explicit X11 session.
+if [ "${XDG_SESSION_TYPE:-}" = wayland ]; then
+    run_im none
+else
+    run_im fcitx5
+fi

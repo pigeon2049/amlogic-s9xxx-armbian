@@ -1,0 +1,12 @@
+[Unit]
+Description=W103D CPU performance policy
+After=armbian-hardware-optimize.service
+ConditionPathExists=/sys/devices/system/cpu/cpufreq/policy0/scaling_governor
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/w103d-performance
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

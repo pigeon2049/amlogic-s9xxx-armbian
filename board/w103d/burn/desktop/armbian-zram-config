@@ -1,0 +1,10 @@
+ENABLED=true
+SWAP=true
+ZRAM_PERCENTAGE=50
+# Bound swap's logical size to half of RAM. No lower physical-memory cap
+# that could cause zram I/O failures before its logical space is exhausted.
+MEM_LIMIT_PERCENTAGE=0
+ZRAM_MAX_DEVICES=1
+SWAP_ALGORITHM=lz4
+SWAP_PRIORITY=100
+RAMLOG_ALGORITHM=zstd

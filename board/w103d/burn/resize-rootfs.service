@@ -1,0 +1,12 @@
+[Unit]
+Description=Expand the W103D root filesystem
+After=local-fs.target
+ConditionPathExists=!/var/lib/w103d/rootfs-expanded
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/w103d-resize-rootfs
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

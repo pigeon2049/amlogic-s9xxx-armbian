@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+<!-- SPDX-License-Identifier: CC0-1.0; original W103D desktop artwork. -->
+<defs><linearGradient id="sky" x2="1" y2="1"><stop stop-color="#15213b"/><stop offset=".6" stop-color="#364561"/><stop offset="1" stop-color="#725671"/></linearGradient><linearGradient id="ridge" x2="0" y2="1"><stop stop-color="#b99ba9"/><stop offset="1" stop-color="#4a526f"/></linearGradient></defs>
+<path fill="url(#sky)" d="M0 0h1920v1080H0z"/>
+<circle cx="1455" cy="310" r="104" fill="#efd2cc"/>
+<path fill="#8a819a" d="M0 820 300 568 590 718 926 392 1240 651 1550 470 1920 730v350H0z"/>
+<path fill="url(#ridge)" d="m0 960 372-318 228 176 380-291 358 260 221-119 361 190v222H0z"/>
+<path fill="#273a56" d="m0 918 308-102 390 211 416-256 355 122 451-58v245H0z"/>
+<path fill="#1b2c44" d="m0 1007 471-106 352 168 544-103 553 36v78H0z"/>
+<text x="108" y="175" font-family="sans-serif" font-size="46" letter-spacing="7" fill="#f5e7e5">armbian</text>
+<text x="112" y="217" font-family="sans-serif" font-size="14" letter-spacing="5" fill="#c3c7d5">W103D · KDE PLASMA</text>
+</svg>

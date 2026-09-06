@@ -1,0 +1,13 @@
+[Unit]
+Description=W103D low-priority eMMC swap file
+After=local-fs.target w103d-resize-rootfs.service armbian-zram-config.service
+Wants=w103d-resize-rootfs.service armbian-zram-config.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/w103d-swapfile
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

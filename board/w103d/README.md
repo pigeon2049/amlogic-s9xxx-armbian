@@ -167,3 +167,9 @@ arbitrary firmware-crash recovery, suspend/resume reliability or complete
 peripheral support. Wired Ethernet, IR, analog audio and eMMC installation
 are outside this wireless validation. The model database keeps automatic
 image building disabled (`BUILD=no`) and specifies no replacement U-Boot.
+
+The separate [USB Burning Tool recipe](burn/README.md) documents the later
+32 GB eMMC bootstrap and clean Chinese KDE image. Its v4 configuration uses
+the tested online-scan repair and existing 1.8 GHz performance governor;
+see [v4 package validation](burn/v4-validation.md) for the exact artifact and
+the distinction between board-tested components and a new container flash.
