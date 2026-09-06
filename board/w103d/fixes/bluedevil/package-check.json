@@ -1,0 +1,12 @@
+{
+  "baseline": "Package: bluedevil\nVersion: 4:6.3.4-2\nArchitecture: arm64\n",
+  "changed_payload_files": [
+    "usr/bin/bluedevil-wizard"
+  ],
+  "upstream_commit": "dff9c79ca81370ed72f672b45ac39ec3d1c09875",
+  "old_disconnect_import": true,
+  "new_disconnect_import": false,
+  "original_wizard_sha256": "919f8a4694f6a7dfc92a168f75d9ce03cde0868b004933c4772a0ed927979424",
+  "package_sha256": "f06441c773dd9c3078144c77aa6868586c5adb7f4382a96d912de564eb04ba08",
+  "wizard_sha256": "940a38d69bd139c3d61a35189c1e5d56ca111b87fee5b88fda435ebfc100e7e9"
+}

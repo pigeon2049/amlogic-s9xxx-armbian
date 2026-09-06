@@ -1,0 +1,4 @@
+# Backport of KDE dff9c79c. Remove when adopting a verified upstream-fixed package.
+Package: bluedevil
+Pin: version 4:6.3.4-2+w103d1
+Pin-Priority: 1001
