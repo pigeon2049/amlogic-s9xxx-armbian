@@ -143,3 +143,29 @@ loads the module from its root filesystem. Never mix a retained 6.12 module.
 
 The clean image contains no Wi-Fi profile, password, AP/BSSID or band lock.
 The test board's 5 GHz-only connection remains a local user configuration.
+
+## KDE v5: preserve board components during APT upgrades
+
+An actual 26.8.1 to 26.8.3 upgrade in a v4 image copy removed the W103D DTB:
+the generic `linux-dtb-current-meson64` preinst deletes `/boot/dtb` and the
+official replacement package does not contain this board. The original
+Odroid N2 BSP also replaced `/etc/armbian-release` and the generic boot scripts.
+
+`protect-upgrades.py ROOT` installs `upgrade-protection.pref` and holds the
+installed BSP, firmware, Image, DTB, U-Boot and header packages. The negative
+APT priority also excludes new generic kernel/board packages and continues
+to work if an installed package's hold is removed. The script validates the
+prepared W103D root and package registrations before changing anything, and
+is idempotent. Both the fresh desktop configuration and incremental clean-root
+update invoke it; `verify-root.py` checks the resulting holds and preferences.
+
+Debian applications, libraries and security updates remain available. The
+matched `6.18.49-ophub` kernel, board identity and tested firmware remain fixed;
+a base-files update can have a newer version without replacing this board BSP.
+This is intentional isolation of the board components, not support for
+installing arbitrary official Odroid N2 kernels. A future matched W103D kernel
+upgrade must deliberately adjust this policy and verify the complete ABI set.
+
+The policy applies to normal APT resolution; direct `dpkg -i`, explicit version
+overrides or manually deleting files are outside it. It does not repair an
+already missing DTB or change the vendor bootloader's fallback behavior.

@@ -5,6 +5,16 @@ import configparser, ctypes, ctypes.util, json, pathlib, sys
 r=pathlib.Path(sys.argv[1])
 def read(p): return (r/p).read_text()
 assert read('etc/hostname').strip()=='armbian'
+assert any(line in ('BOARD=w103d', 'BOARD="w103d"') for line in read('etc/armbian-release').splitlines())
+preferences=read('etc/apt/preferences.d/99-w103d-board-components')
+assert 'Pin-Priority: -1' in preferences
+for pattern in ['armbian-bsp-*','armbian-firmware*','linux-image-*','linux-dtb-*','linux-u-boot-*','linux-headers-*']:
+ assert pattern in preferences
+held=set()
+for block in read('var/lib/dpkg/status').split('\n\n'):
+ fields=dict(line.split(': ',1) for line in block.splitlines() if ': ' in line and not line.startswith(' '))
+ if fields.get('Status')=='hold ok installed':held.add(fields['Package'])
+assert {'armbian-bsp-cli-odroidn2-current','linux-dtb-current-meson64','linux-u-boot-odroidn2-current','armbian-firmware'} <= held
 assert not (r/'root/.not_logged_in_yet').exists()
 assert read('etc/machine-id').strip()==''
 assert not list((r/'etc/ssh').glob('ssh_host_*'))

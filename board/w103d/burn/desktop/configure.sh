@@ -145,6 +145,7 @@ install -D -m644 "$src/plasma-nm" /etc/xdg/plasma-nm
 install -D -m644 "$src/plasma-nm" /etc/skel/.config/plasma-nm
 install -m644 -o armbian -g armbian "$src/plasma-nm" /home/armbian/.config/plasma-nm
 touch /var/lib/w103d/desktop-ready /var/lib/w103d/root-password-set
+python3 "$src/protect-upgrades.py" /
 rm -f /root/.not_logged_in_yet
 for p in /etc/systemd/system/getty@.service.d/override.conf /etc/systemd/system/getty@tty1.service.d/override.conf /etc/systemd/system/serial-getty@.service.d/override.conf; do
     if test -f "$p" && grep -q -- '--autologin root' "$p"; then rm "$p"; fi

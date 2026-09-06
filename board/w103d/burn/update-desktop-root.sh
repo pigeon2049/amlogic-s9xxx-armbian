@@ -24,4 +24,5 @@ install -D -m755 "$scripts/desktop/performance.sh" "$root/usr/local/sbin/w103d-p
 install -D -m644 "$scripts/desktop/performance.service" "$root/etc/systemd/system/w103d-performance.service"
 install -D -m644 "$scripts/desktop/cpufrequtils" "$root/etc/default/cpufrequtils"
 systemctl --root="$root" enable w103d-performance.service
+python3 "$scripts/desktop/protect-upgrades.py" "$root"
 echo 'Updated the clean root with the tested scan driver and CPU policy.'

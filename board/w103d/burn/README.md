@@ -11,7 +11,10 @@ The user's subsequent desktop session exposed a reproducible OpenGL 3.1
 black-screen bug when opening Overview. KDE v3 uses KWin's hardware GLES path
 and disables automatic display dimming, blanking, locking and system sleep.
 KDE v4 adds the board-tested associated-scan driver repair and the existing
-1.8 GHz CPU performance policy. New containers require a separate flash test;
+1.8 GHz CPU performance policy. KDE v5 adds APT protection for the matched
+board components after reproducing the generic DTB package deleting the
+W103D DTB during an upgrade. Debian userspace updates remain available.
+New containers require a separate flash test;
 live driver/configuration validation is not a claim of flashing that container.
 See `desktop/README.md` for tested settings and build inputs.
 

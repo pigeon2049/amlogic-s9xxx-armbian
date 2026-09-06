@@ -39,7 +39,7 @@ zerofree "$work/rootfs.raw"
 fsck.vfat -n "$work/bootfs.raw" > "$work/checks/bootfs-fsck.log" 2>&1
 python3 "$scripts/raw_to_sparse.py" "$work/bootfs.raw" "$work/payloads/system.PARTITION"
 python3 "$scripts/raw_to_sparse.py" "$work/rootfs.raw" "$work/payloads/data.PARTITION"
-name=W103D_Armbian_26.8.1_6.18.49_KDE_v4.burn.img
+name=W103D_Armbian_26.8.1_6.18.49_KDE_v5.burn.img
 "$tools/aml_image_v2_packer_new" -r "$work/payloads/image.cfg" "$work/payloads" "$work/$name" > "$work/checks/pack.log" 2>&1
 "$tools/aml_image_v2_packer_new" -c "$work/$name" > "$work/checks/container-integrity.log" 2>&1
 sha256sum "$work/$name" > "$work/$name.sha256"

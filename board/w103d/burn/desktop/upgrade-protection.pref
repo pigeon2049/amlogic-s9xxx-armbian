@@ -1,0 +1,5 @@
+# W103D uses a matched, separately tested kernel/DTB/firmware set.
+# Ordinary Debian applications and security updates remain enabled.
+Package: armbian-bsp-* armbian-firmware* linux-image-* linux-dtb-* linux-u-boot-* linux-headers-*
+Pin: version *
+Pin-Priority: -1
