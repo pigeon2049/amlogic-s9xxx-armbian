@@ -32,6 +32,7 @@ if grep -Eq '(^|/)mt7663s\.ko(\.(xz|zst|gz))?$' "$work/checks/initramfs-files.tx
     exit 1
 fi
 python3 "$scripts/desktop/verify-root.py" "$work/root" > "$work/checks/desktop.json"
+python3 "$scripts/../fixes/bluedevil/verify-root.py" "$work/root" > "$work/checks/bluedevil.json"
 sync
 umount "$work/root" "$work/boot"
 e2fsck -fn "$work/rootfs.raw" > "$work/checks/rootfs-fsck.log" 2>&1
@@ -39,7 +40,7 @@ zerofree "$work/rootfs.raw"
 fsck.vfat -n "$work/bootfs.raw" > "$work/checks/bootfs-fsck.log" 2>&1
 python3 "$scripts/raw_to_sparse.py" "$work/bootfs.raw" "$work/payloads/system.PARTITION"
 python3 "$scripts/raw_to_sparse.py" "$work/rootfs.raw" "$work/payloads/data.PARTITION"
-name=W103D_Armbian_26.8.1_6.18.49_KDE_v5.burn.img
+name=W103D_Armbian_26.8.1_6.18.49_KDE_v6.burn.img
 "$tools/aml_image_v2_packer_new" -r "$work/payloads/image.cfg" "$work/payloads" "$work/$name" > "$work/checks/pack.log" 2>&1
 "$tools/aml_image_v2_packer_new" -c "$work/$name" > "$work/checks/container-integrity.log" 2>&1
 sha256sum "$work/$name" > "$work/$name.sha256"

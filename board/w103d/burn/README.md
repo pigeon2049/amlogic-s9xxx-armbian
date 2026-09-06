@@ -14,6 +14,8 @@ KDE v4 adds the board-tested associated-scan driver repair and the existing
 1.8 GHz CPU performance policy. KDE v5 adds APT protection for the matched
 board components after reproducing the generic DTB package deleting the
 W103D DTB during an upgrade. Debian userspace updates remain available.
+KDE v6 backports the upstream BlueDevil pairing fix and pins the tested package;
+see [the fix and clean-image build instructions](../fixes/bluedevil/README.md).
 New containers require a separate flash test;
 live driver/configuration validation is not a claim of flashing that container.
 See `desktop/README.md` for tested settings and build inputs.
