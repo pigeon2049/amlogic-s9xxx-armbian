@@ -44,7 +44,7 @@ with (work / 'checks/qemu-clean-firstboot.log').open('w') as log:
             "ssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub && "
             "test \"$(dpkg-query -W -f='${Version}' bluedevil)\" = '4:6.3.4-2+w103d1' && "
             "test -z \"$(dpkg --audit)\" && "
-            "apt-cache policy bluedevil | grep -F 'Candidate: 4:6.3.4-2+w103d1' && "
+            "LC_ALL=C apt-cache policy bluedevil | grep -F 'Candidate: 4:6.3.4-2+w103d1' && "
             "dbus-run-session -- env QT_QPA_PLATFORM=offscreen LD_BIND_NOW=1 "
             "/usr/bin/bluedevil-wizard --version && echo __PAIRING_BOOT_OK__"
         )
