@@ -1,0 +1,17 @@
+name: Check Git line endings
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify LF checkout and archive, including binary preservation
+        run: python .github/scripts/check_line_endings.py
