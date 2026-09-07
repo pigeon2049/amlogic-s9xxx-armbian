@@ -1,5 +1,7 @@
 # KDE v7: Bluetooth startup and both wireless fixes
 
+**Historical recipe:** v7/v3 wrote the wrong KDE group. Use [v8-README.md](v8-README.md) for the corrected release.
+
 Generated artifacts and verification boundaries: [v7-validation.md](v7-validation.md).
 
 The v7 recipe enables `bluetooth.service`, explicitly sets BlueZ
@@ -19,7 +21,7 @@ captured bonds, adapter identities and saved Bluetooth rfkill state. A clean
 flash still requires pairing the mouse once; the image does not contain the
 developer's mouse keys.
 
-Source references: [BlueDevil settings](https://invent.kde.org/plasma/bluedevil/-/blob/v6.3.4/src/settings/bluedevilglobalsettings.kcfg),
+Source references: [BlueDevil settings](https://invent.kde.org/plasma/bluedevil/-/blob/v6.3.4/src/kcm/bluetooth.cpp),
 [startup handling](https://invent.kde.org/plasma/bluedevil/-/blob/v6.3.4/src/kded/devicemonitor.cpp),
 [BlueZ policy](https://github.com/bluez/bluez/blob/5.82/src/main.conf).
 

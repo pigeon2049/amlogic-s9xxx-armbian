@@ -33,7 +33,8 @@ class BluetoothStartup(unittest.TestCase):
 
     def test_saved_off_state_and_bonds_survive_configuration(self):
         path = self.root / 'home/armbian/.config/bluedevilglobalrc'
-        path.write_text('[General]\nlaunchState=remember\nbluetoothBlocked=true\n'
+        path.write_text('[Global]\nlaunchState=disable\nbluetoothBlocked=true\n'
+                        '[General]\nlaunchState=enable\nbluetoothBlocked=false\nKeepMe=yes\n'
                         '[Adapters]\n00:11:22:33:44:55_powered=false\n'
                         '[Devices]\nconnectedDevices=00:11:22:33:44:66\n')
         bond = self.root / 'var/lib/bluetooth/test-adapter/test-device/info'
@@ -45,8 +46,10 @@ class BluetoothStartup(unittest.TestCase):
         self.assertEqual(path.read_bytes(), first)
         config = configparser.RawConfigParser(delimiters=('=',))
         config.read(path)
-        self.assertEqual(config.get('General', 'launchState'), 'enable')
-        self.assertFalse(config.getboolean('General', 'bluetoothBlocked'))
+        self.assertEqual(config.get('Global', 'launchState'), 'enable')
+        self.assertFalse(config.getboolean('Global', 'bluetoothBlocked'))
+        self.assertFalse(config.has_option('General', 'launchState'))
+        self.assertEqual(config.get('General', 'KeepMe'), 'yes')
         self.assertEqual(config.get('Devices', 'connectedDevices'), '00:11:22:33:44:66')
         self.assertEqual(bond.read_bytes(), b'test bond sentinel')
         with self.assertRaises(AssertionError):
@@ -66,6 +69,13 @@ class BluetoothStartup(unittest.TestCase):
         path.parent.mkdir(parents=True)
         path.write_text('1')
         with self.assertRaises(AssertionError):
+            verify(self.root)
+
+    def test_reject_v7_wrong_group(self):
+        configure(self.root)
+        path = self.root / 'home/armbian/.config/bluedevilglobalrc'
+        path.write_text(path.read_text().replace('[Global]', '[General]'))
+        with self.assertRaises(configparser.NoSectionError):
             verify(self.root)
 
 

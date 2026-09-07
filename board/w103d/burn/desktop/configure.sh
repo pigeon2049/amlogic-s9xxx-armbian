@@ -17,6 +17,7 @@ install -D -m644 "$src/ssh-hostkeys.conf" /etc/systemd/system/ssh.service.d/10-w
 sed -i 's/^OPENSSHD_REGENERATE_HOST_KEYS=.*/OPENSSHD_REGENERATE_HOST_KEYS=false/' /etc/default/armbian-firstrun
 install -D -m644 "$src/armbian-zram-config" /etc/default/armbian-zram-config
 install -D -m644 "$src/memory.conf" /etc/sysctl.d/99-w103d-desktop.conf
+install -D -m644 "$src/ping.conf" /etc/sysctl.d/99-w103d-ping.conf
 install -D -m755 "$src/performance.sh" /usr/local/sbin/w103d-performance
 install -D -m644 "$src/performance.service" /etc/systemd/system/w103d-performance.service
 install -D -m644 "$src/cpufrequtils" /etc/default/cpufrequtils
