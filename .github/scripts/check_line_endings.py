@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prove Windows-style Git settings cannot change checkout/archive bytes."""
+"""Verify LF blobs, checkout contents/link targets and exact archive bytes."""
 import hashlib
 import io
 import os
@@ -19,6 +19,24 @@ def blob_id(data):
     return hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
 
 
+def checkout_blob(path, mode, oid):
+    if not path.is_symlink():
+        # With core.symlinks=false Git writes the link's blob as a plain file.
+        return path.read_bytes()
+    if mode != b'120000':
+        raise RuntimeError('Unexpected symbolic link: ' + str(path))
+    data = os.fsencode(os.readlink(path))
+    if os.name == 'nt':
+        # Git for Windows converts POSIX separators when creating native links.
+        # Compare the exact expected Windows target, not a normalized pair that
+        # could conceal other target changes. Archive links remain byte-exact.
+        source = git('cat-file', 'blob', oid)
+        if data != source.replace(b'/', b'\\'):
+            raise RuntimeError('Git checkout changed symbolic link target: ' + str(path))
+        return source
+    return data
+
+
 def main():
     if git('rev-parse', '--show-object-format').strip() != b'sha1':
         raise RuntimeError('Update blob hashing for this repository object format')
@@ -30,7 +48,7 @@ def main():
         mode, oid, stage = info.split()
         if stage != b'0' or mode == b'160000':
             raise RuntimeError('Requires a resolved index without submodules')
-        entries[os.fsdecode(path)] = oid.decode()
+        entries[os.fsdecode(path)] = (mode, oid.decode())
     for record in git('ls-files', '--eol', '-z').split(b'\0'):
         if record.startswith((b'i/crlf', b'i/mixed')):
             raise RuntimeError('Non-LF text in Git index: ' + os.fsdecode(record))
@@ -44,9 +62,9 @@ def main():
         if target.parent != Path(tempfile.gettempdir()).resolve():
             raise RuntimeError('Unexpected temporary checkout location')
         git(*settings, 'checkout-index', '--all', '--prefix=' + target.as_posix() + '/')
-        for name, oid in entries.items():
+        for name, (mode, oid) in entries.items():
             path = target / name
-            data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
+            data = checkout_blob(path, mode, oid)
             if blob_id(data) != oid:
                 raise RuntimeError('Git checkout changed bytes: ' + name)
 
@@ -57,13 +75,14 @@ def main():
             if item.isdir():
                 continue
             data = os.fsencode(item.linkname) if item.issym() else stream.extractfile(item).read()
-            if item.name not in entries or blob_id(data) != entries[item.name]:
+            if item.name not in entries or blob_id(data) != entries[item.name][1]:
                 raise RuntimeError('git archive changed bytes: ' + item.name)
             count += 1
     if count != len(entries):
         raise RuntimeError('Archive omitted tracked files; review export attributes')
-    print(f'PASS: {count} tracked files remain byte-identical in checkout and archive '
-          'with core.autocrlf=true and core.eol=crlf; index text is LF.')
+    print(f'PASS: {count} tracked entries verified with core.autocrlf=true and '
+          'core.eol=crlf; index text is LF; checkout files and archive entries '
+          'are byte-identical; native link targets match platform separators.')
 
 
 if __name__ == '__main__':

@@ -8,10 +8,18 @@ permissions:
 jobs:
   check:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
+        symlinks: ['true', 'false']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+      - name: Test line-ending checker regressions
+        run: python -B .github/scripts/test_line_endings.py
       - name: Verify LF checkout and archive, including binary preservation
+        env:
+          GIT_CONFIG_COUNT: '1'
+          GIT_CONFIG_KEY_0: core.symlinks
+          GIT_CONFIG_VALUE_0: ${{ matrix.symlinks }}
         run: python .github/scripts/check_line_endings.py
