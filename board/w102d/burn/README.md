@@ -1,6 +1,8 @@
 # W102D 2 GB / 16 GB capacity trial
 
-The v2 recipe derives from the pairing-fixed W103D KDE v6 assembly. The original
+The current v3 recipe requires the Bluetooth-startup and wireless-fixed W103D KDE v7 assembly.
+See [the shared v7 recipe](../../w103d/burn/v7-README.md) for preparation and module identities.
+The previous v2 derived from the pairing-fixed W103D KDE v6 assembly. The original
 v1 used W103D v5 at `2bf9c0b34c1a6086a8b86a6ba90c81fc184a6947`. The owner reports that W102D and
 W103D use the same factory flashing package. This trial changes only eMMC
 capacity handling; **W102D hardware boot has not yet been verified**.
@@ -33,7 +35,7 @@ as the base: unchanged inputs are hardlinked and must remain immutable.
 
 ```sh
 bash board/w102d/burn/build.sh \
-  /work/w103d-v6 /work/w102d-v2 /work/khadas-tools /work/bootup.bmp
+  /work/w103d-v7 /work/w102d-v3 /work/khadas-tools /work/bootup.bmp
 ```
 
 The build runs 26 ARM provisioning tests, produces the new bootstrap, packs
@@ -78,3 +80,19 @@ The inherited desktop logs in automatically as `armbian / 1234`; root also
 uses `1234`. Change these passwords after installation. No saved Wi-Fi
 credentials are included. A successful W103D test does not establish W102D
 compatibility; this package still needs the owner's W102D flash test.
+
+## v3 startup and wireless requirements
+
+v3 inherits BlueZ AutoEnable and KDE launchState=enable, so KDE does not
+restore a saved adapter-off state at login. The default user and future
+users get the same policy. Pair a mouse once after a clean flash; no device
+bonds or rfkill snapshots are shipped.
+
+Both the MT7663S connection-probe repair and mac80211 payload-rate reporting
+repair are mandatory. The builder verifies the v7 reports and independently
+mounts the base root/boot read-only to check the actual module hashes, ABI,
+Bluetooth settings and absence of embedded wireless modules in initramfs.
+An old v6 root or old same-release module cannot pass by changing its filename.
+The root/boot payloads still remain identical to the supplied W103D base.
+Scanning packet loss remains unresolved, and W102D hardware boot and Bluetooth
+reconnection still require device validation.
