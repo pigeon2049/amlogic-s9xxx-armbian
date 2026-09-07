@@ -1,7 +1,7 @@
 # W102D 2 GB / 16 GB capacity trial
 
-The current v3 recipe requires the Bluetooth-startup and wireless-fixed W103D KDE v7 assembly.
-See [the shared v7 recipe](../../w103d/burn/v7-README.md) for preparation and module identities.
+The current v4 recipe requires the corrected Bluetooth-startup, ping-permission and wireless-fixed W103D KDE v8 assembly.
+See [the shared v8 recipe](../../w103d/burn/v8-README.md) for preparation and module identities.
 The previous v2 derived from the pairing-fixed W103D KDE v6 assembly. The original
 v1 used W103D v5 at `2bf9c0b34c1a6086a8b86a6ba90c81fc184a6947`. The owner reports that W102D and
 W103D use the same factory flashing package. This trial changes only eMMC
@@ -18,7 +18,7 @@ checks are retained. Malformed or out-of-range capacities are rejected.
 
 DDR/U-Boot, vendor kernel, vendor DTB, Linux 6.18.49-ophub, MT7663S driver and
 firmware, root filesystem, boot filesystem, logo and desktop settings remain
-identical to the supplied W103D base (v6 for this release). Internal W103D board identity, environment boot command
+identical to the supplied W103D base (v8 for this release). Internal W103D board identity, environment boot command
 names and filesystem labels intentionally remain unchanged for this trial.
 The 8 GiB initial root filesystem fits the 16 GB layout and expands on first
 startup. See [the W103D recipe](../../w103d/burn/README.md) for shared boot
@@ -27,15 +27,15 @@ design, prerequisites and binary provenance.
 ## Build and verify
 
 Use Linux, Python 3.11+, clang/lld, qemu-arm-static, device-tree-compiler and
-the existing Khadas packer. First prepare and verify a clean W103D v6 assembly
-using [the pairing fix recipe](../../w103d/fixes/bluedevil/README.md). Keep its raw
+the existing Khadas packer. First prepare and verify a clean W103D v8 assembly
+using [the shared recipe](../../w103d/burn/v8-README.md). Keep its raw
 files, payloads and `checks/final-package.json`. Supply the same logo BMP.
 The W102D output directory must not exist and must be on the same filesystem
 as the base: unchanged inputs are hardlinked and must remain immutable.
 
 ```sh
 bash board/w102d/burn/build.sh \
-  /work/w103d-v7 /work/w102d-v3 /work/khadas-tools /work/bootup.bmp
+  /work/w103d-v8 /work/w102d-v4 /work/khadas-tools /work/bootup.bmp
 ```
 
 The build runs 26 ARM provisioning tests, produces the new bootstrap, packs
@@ -96,3 +96,11 @@ An old v6 root or old same-release module cannot pass by changing its filename.
 The root/boot payloads still remain identical to the supplied W103D base.
 Scanning packet loss remains unresolved, and W102D hardware boot and Bluetooth
 reconnection still require device validation.
+
+## v4 correction
+
+The shipped BlueDevil 6.3.4 reads `[Global]`; v3 incorrectly wrote `[General]`.
+v4 corrects that group and adds persistent ordinary-user ping permissions.
+The builder rechecks the actual root with the full desktop verifier, including
+the ping policy, before accepting the shared payloads. Historical v3 claims
+above are superseded by [the correction](../../w103d/burn/desktop-permissions-validation.md).

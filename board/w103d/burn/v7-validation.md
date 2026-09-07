@@ -1,5 +1,12 @@
 # W103D v7 / W102D v3 offline release validation
 
+Correction (2026-09-07): the original KDE check below used the wrong INI
+group. Shipped BlueDevil 6.3.4 reads `Global`, whereas v7/v3 wrote `General`.
+Those images do not implement the claimed explicit login-enable policy.
+See [desktop-permissions-validation.md](desktop-permissions-validation.md)
+for the corrected source, ping permissions and independent validation.
+Original release artifacts remain unchanged.
+
 Date: 2026-09-07. Prepared from the immutable clean W103D v6 root, with the
 two already board-tested `6.18.49-ophub` modules and Bluetooth startup policy.
 No kernel/module rebuild or live module reload was needed for this packaging.

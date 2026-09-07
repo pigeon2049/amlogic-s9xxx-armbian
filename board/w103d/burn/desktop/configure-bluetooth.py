@@ -11,7 +11,7 @@ def configure(root):
     root = Path(root).resolve(strict=True)
     for relative, settings in [
         ('etc/bluetooth/main.conf', {'Policy': {'AutoEnable': 'true'}}),
-        *((directory + '/bluedevilglobalrc', {'General': {
+        *((directory + '/bluedevilglobalrc', {'Global': {
             'launchState': 'enable', 'bluetoothBlocked': 'false'}})
           for directory in ('etc/xdg', 'etc/skel/.config', 'home/armbian/.config')),
     ]:
@@ -19,6 +19,13 @@ def configure(root):
         config = configparser.RawConfigParser(strict=False, delimiters=('=',))
         config.optionxform = str
         config.read(path, encoding='utf-8')
+        # BlueDevil 6.3.4 reads these keys from Global, not General.
+        # Remove the ineffective keys shipped by the earlier configurator.
+        if path.name == 'bluedevilglobalrc' and config.has_section('General'):
+            for key in ('launchState', 'bluetoothBlocked'):
+                config.remove_option('General', key)
+            if not config.items('General'):
+                config.remove_section('General')
         for group, values in settings.items():
             if not config.has_section(group):
                 config.add_section(group)

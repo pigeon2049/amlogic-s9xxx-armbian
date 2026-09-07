@@ -1,10 +1,16 @@
 #!/usr/bin/python3
 # SPDX-License-Identifier: GPL-2.0-only
 """Check the shipping root, including identities, credentials and desktop policy."""
-import configparser, ctypes, ctypes.util, json, pathlib, sys
-r=pathlib.Path(sys.argv[1])
+import argparse, configparser, ctypes, ctypes.util, json, pathlib, sys
+parser=argparse.ArgumentParser()
+parser.add_argument("root", type=pathlib.Path)
+parser.add_argument("--before-permissions-fix", action="store_true", help="Only for checking an immutable v6/v7 input before migration")
+args=parser.parse_args()
+r=args.root
 def read(p): return (r/p).read_text()
 assert read('etc/hostname').strip()=='armbian'
+if not args.before_permissions_fix:
+ assert 'net.ipv4.ping_group_range = 0 2147483647' in read('etc/sysctl.d/99-w103d-ping.conf')
 assert any(line in ('BOARD=w103d', 'BOARD="w103d"') for line in read('etc/armbian-release').splitlines())
 preferences=read('etc/apt/preferences.d/99-w103d-board-components')
 assert 'Pin-Priority: -1' in preferences
