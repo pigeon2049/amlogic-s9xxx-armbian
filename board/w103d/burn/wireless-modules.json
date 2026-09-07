@@ -1,0 +1,14 @@
+{
+  "release": "6.18.49-ophub",
+  "source_commit": "2332919402159e53ae38d72b8e5badc86fb66338",
+  "modules": {
+    "mt7663s": {
+      "sha256": "e5e866360798b2d97aa7f9cf81de02ae91d8a30e6a92f86ca8f31abb36a324cf",
+      "build_id": "503c2a3ea8f976c5f7ad200eb9faa883b66fd4df"
+    },
+    "mac80211": {
+      "sha256": "f2d7875138f70e109af964b93497b4727e2cea9fe48ea1a2fe219ab48c5df335",
+      "build_id": "baf295c457cd001d9f716255db9f0c3df91fad8f"
+    }
+  }
+}

@@ -128,18 +128,20 @@ To update an unconfigured v3 image, copy its raw root filesystem to a new
 workspace, mount the copy, then run:
 
 ```sh
-bash board/w103d/burn/update-desktop-root.sh /work/mounted-root /work/mt7663s.ko
+bash board/w103d/burn/update-desktop-root.sh /work/mounted-root /work/mt7663s.ko /work/mac80211.ko
 python3 board/w103d/burn/desktop/verify-root.py /work/mounted-root
 ```
 
-Supply a separately built, tested `6.18.49-ophub` module, built with
+The current updater requires both separately built, tested `6.18.49-ophub` modules, built with
 `ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LOCALVERSION=-ophub`.
-The v4 tested module SHA-256 is
+The historical v4 tested module SHA-256 was
 `1f0f1456c311423dd7f2eb189c805a689515d3cb3a93f810cd74cd995df78737`.
-The updater checks exact ABI, dependencies and SDIO alias, installs the module,
-runs depmod and installs the CPU policy. Unmount before calling the assembler.
-The assembler rejects an embedded initramfs MT7663S copy, since this image
-loads the module from its root filesystem. Never mix a retained 6.12 module.
+Current v7 uses the newer pair pinned in `../wireless-modules.json`; the old
+v4 artifact is rejected. The updater checks exact hashes, ABI, dependencies
+and SDIO alias, installs both modules, runs depmod and configures Bluetooth
+startup and CPU policy. Unmount before calling the assembler. The assembler
+rejects embedded initramfs MT7663S/mac80211 copies. Never mix a retained 6.12
+module. See the [v7 recipe](../v7-README.md) for clean v6 migration.
 
 The clean image contains no Wi-Fi profile, password, AP/BSSID or band lock.
 The test board's 5 GHz-only connection remains a local user configuration.
