@@ -139,6 +139,7 @@ EOF
 cp /etc/skel/.config/{baloofilerc,kwinrc,plasmarc} /home/armbian/.config/
 chown -R armbian:armbian /home/armbian/.config
 python3 "$src/configure-power.py" /
+python3 "$src/configure-bluetooth.py" /
 python3 "$src/disable-legacy-startup.py" /
 install -D -m644 "$src/kwin-gles.conf" /etc/systemd/user/plasma-kwin_wayland.service.d/20-w103d-gles.conf
 install -D -m644 "$src/plasma-nm" /etc/xdg/plasma-nm
