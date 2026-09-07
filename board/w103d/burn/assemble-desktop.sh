@@ -34,6 +34,7 @@ if grep -Eq '(^|/)(mt7663s|mac80211)\.ko(\.(xz|zst|gz))?$' "$work/checks/initram
     exit 1
 fi
 python3 "$scripts/desktop/verify-root.py" "$work/root" > "$work/checks/desktop.json"
+python3 "$scripts/desktop/verify-packages.py" "$work/root" > "$work/checks/desktop-packages.json"
 python3 "$scripts/../fixes/bluedevil/verify-root.py" "$work/root" > "$work/checks/bluedevil.json"
 python3 "$scripts/desktop/verify-bluetooth.py" "$work/root" > "$work/checks/bluetooth-startup.json"
 python3 "$scripts/wireless_modules.py" "$work/root" > "$work/checks/wireless-modules.json"
