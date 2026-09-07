@@ -1,73 +1,56 @@
-# W103D v8 / W102D v4 release validation
+# W103D v8 / W102D v4 current delivery
 
-Date: 2026-09-07. Same-version replacement after the reported logo/reboot loop.
-The original v8/v4 files were defective and their original hashes are superseded.
-The repaired files retain the same names and overwrite the delivery paths.
-Built with the unchanged desktop root and corrected boot scripts from:
+Date: 2026-09-07. Rebuilt after repository-wide LF enforcement and confirmation
+that the burning tool was closed. Both original delivery paths are overwritten;
+release names and version numbers are unchanged.
 
-- W103D `w103d-burn-6.18`: `83aed3a6a02393583e891be3e5c9154a9e3ff889`.
-- W102D `w102d-burn-6.18`: `1a4786bb903be003821da3031b46028e99462560`.
-
-The source snapshots are included in each delivery. Later documentation-only
-commits record the results and do not change the inputs used for these images.
-
-| Image | Bytes | SHA-256 |
+| Image | Bytes | Current SHA-256 |
 | --- | ---: | --- |
-| W103D_Armbian_26.8.1_6.18.49_KDE_v8.burn.img | 4698948768 | `cd87d6bec89ba28e483b52444228b3df410dab3b97f97b1596be91ab6387626f` |
-| W102D_Armbian_26.8.1_6.18.49_KDE_16GB_TEST_v4.burn.img | 4698952864 | `915a54195dec53906e3c8dc61b3c4a1bd46d2a2b26dd90ae64c09d0b3a89ed86` |
+| W103D v8 | 4699997344 | `1654cff9c9a807aa8706ee64d98b9bba180059ea9d107a9fb5b20ed0a13b9f2e` |
+| W102D v4 | 4700001440 | `070eec9c40bf6fc05db55b633b9d8d4b34288e352da9de24fe4fb9a22c770ed5` |
 
-Both include corrected BlueDevil 6.3.4 `[Global]` startup policy and persistent
-ordinary-user ICMP Echo permissions. Actual ARM64 ping under QEMU, uid/gid
-1000 and without NET_RAW, reproduces the old failure, then passes IPv4 3/3,
-IPv6 3/3 and repeated systemd-sysctl startup application. Real kreadconfig6
-returns Global/launchState=enable at all three config locations.
-For read-only image QA, Qt uses offscreen mode and a temporary writable
-XDG_CONFIG_HOME in a private mount namespace; the image remains unchanged.
+Build source commits:
 
-Clean-root migration, full desktop checks, Bluetooth policy/identity checks,
-pairing backport, exact tested wireless hashes, complete 6.18.49-ophub ABI,
-firmware, DTB/Image/initramfs, filesystems, container integrity, every payload
-and VERIFY record, sparse expansion, bootstrap init and logo checks pass.
-No kernel or module was rebuilt. Initramfs contains neither wireless module.
+- W103D: `ae8825dcf090026e078d1c1f7e62c8da8da25cc4` on `w103d-burn-6.18`.
+- W102D: `3be9ca2dba087d57837ef79f4dbc3cc2a09be760` on `w102d-burn-6.18`.
 
-W102D passes all 26 ARM capacity-bootstrap tests. Its raw rootfs and bootfs
-are identical to W103D; only boot/recovery provisioning payloads and their
-VERIFY records differ. Its 16 GB support remains a hardware trial.
+The source archives are exact snapshots of these commits. Documentation-only
+follow-up commits record the output hashes without changing build inputs.
 
-The identical desktop root additionally passes a QEMU virt system boot,
-SSH host-key generation and root/armbian SSH logins in disposable snapshots.
-This direct kernel boot bypasses physical U-Boot; it is not a hardware flash. Mouse reconnection after real startup remains unverified. Existing
-scan packet loss is not addressed. Original v7/v3 delivery files are retained.
+A new clean desktop root was prepared from immutable v6 with current source.
+BlueDevil Global startup policy, ordinary-user IPv4/IPv6 ping and repeated
+systemd-sysctl application pass. Real ARM64 KDE configuration reads pass.
+The actual FAT script is LF and matches the source, with valid legacy CRCs.
+Both container/payload/VERIFY/sparse, firmware, kernel/DTB/initramfs, exact
+module hashes/full 6.18.49-ophub ABI, pairing package and filesystem checks pass.
 
-Windows deliveries:
+The newly generated W103D root passes QEMU virt clean startup, SSH host-key
+generation and both root/armbian SSH logins using temporary snapshots.
+The test directly loads the kernel, bypasses physical U-Boot and does not
+emulate W103D hardware. W102D passes all 26 capacity bootstrap cases and has
+identical rootfs/bootfs to this tested W103D base; only boot/recovery provisioning
+payloads and their VERIFY items differ.
 
-- `output/releases/W103D_6.18.49_KDE_USB_Burning_v8/`
-- `w102d/output/W102D_6.18.49_KDE_16GB_USB_Burning_v4/`
+No kernel was rebuilt and no modules were hot-reloaded. Neither new image
+has been physically flashed in this run. Mouse startup reconnection and
+W102D hardware compatibility remain unverified; scan packet loss is unresolved.
 
-Each contains the burn image, SHA-256 sidecar, manifest, instructions, checks
-and source archive. Build recipe: [v8-README.md](v8-README.md).
+Rootfs SHA-256: `3e5a2f977e974d3d7509b42185bf6aae2960fb48d3f966f4380c0c7b527b15c1`.
+Bootfs SHA-256: `e85945ecce7adfc2ec5246b344309205dcd13f57c63ff63b1c8e27edbdab49ff`.
 
-## Boot-loop diagnosis and regression prevention
+## Prior boot-loop defect
 
-Windows Git archive with core.autocrlf=true converted the unqualified .cmd
-source from 663 LF bytes to 678 CRLF bytes; mkimage packed it without complaint.
-The original boot FAT contains that CRLF source and compiled payload. A host
-replay of the Khadas v2015.01-family Hush parser (hardware commands stubbed)
-reports syntax error and never reaches booti for this script. The prior LF
-script and repaired script each reach booti once. This proves the artifact
-parser failure; it is not a captured serial trace from the affected box.
+The first v8/v4 archive converted the eMMC .cmd script from LF to CRLF under
+Windows Git. The vendor-family Hush parser reproduced syntax error with no
+booti call. Explicit .cmd LF attributes and actual packed-script checks fixed
+that defect; root-level text/auto LF attributes now protect the entire repo,
+with Windows/Linux checkout/archive byte-identity CI.
 
-The .cmd attribute now enforces LF even when Windows Git archives the commit.
-Assembly checks source bytes and compiled legacy header/data CRCs and text.
-Final package checks extract both script files from actual FAT with mtools;
-the old FAT is rejected despite its valid container and uImage CRCs.
+All previously recorded hashes for these same filenames are superseded by
+the table above, including the first defective hashes beginning b7af1e18 /
+a4a4ba39 and the interim repair hashes cd87d6be / 915a5419.
+Historical diagnosis: workspace output/research/20260907-bootloop.
+Current build evidence: output/research/20260907-git-lf-rebuild.
 
-All 204 boot filesystem file contents were compared: only emmc_autoscript
-and emmc_autoscript.cmd differ. The root filesystem remains byte-identical
-(SHA-256 e7714dd3e0433d34c7307489f24226921ab6f828878d2d220e609a8f017758b1).
-W102D again passes 26 capacity tests and matches the repaired W103D root/boot.
-
-Invalid original hashes (do not use): W103D b7af1e18a1e0c2cb6bd3819064206fa032b29dc66c49445500ce3a5e3fd6b509;
-W102D a4a4ba39120f439c207d175f7e3e5791b2a6f1140625ac23129e1bda5dd11542.
-Evidence: workspace output/research/20260907-bootloop and delivery checks/boot-repair.
-Release numbers must not increase without explicit user permission.
+Deliveries contain the image, SHA-256 sidecar, manifest, instructions, source
+archive and checks. Recipe: [v8-README.md](v8-README.md).
