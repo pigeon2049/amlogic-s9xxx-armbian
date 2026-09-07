@@ -1,44 +1,48 @@
-# W103D v8 / W102D v4 full desktop build — replacement status
+# W103D v8 / W102D v4 complete desktop delivery
 
-Date: 2026-09-08. Version numbers and final filenames are unchanged.
+Date: 2026-09-08. The original filenames and delivery directories are
+overwritten. Release numbers remain v8/v4 as requested.
 
-W102D v4 has been replaced successfully. W103D v8 has been generated and
-verified, but Windows denied replacing its original image while USB_Burning_Tool
-was running. The new W103D bytes are staged in the original directory as
-`W103D_Armbian_26.8.1_6.18.49_KDE_v8.burn.img.partial`. Do not confuse this with the old final .img file.
+| Image | Bytes | Current SHA-256 |
+| --- | ---: | --- |
+| W103D v8 | 6,065,238,080 | `f3cceb585d92a526dc65a8bc3798a387e947de04852915fd20516dada6e51b19` |
+| W102D v4 | 6,065,242,176 | `531313c2616c54d7591536e731a7e998536d824087ca7511d772a0333c261d58` |
 
-| Generated image | Bytes | New SHA-256 | Delivery |
-| --- | ---: | --- | --- |
-| W103D v8 | 6065238080 | `266c6d6e5e504b25518e6d8d25d1d489a40391335536456f436fe29b83e22539` | Verified .partial; final replacement pending |
-| W102D v4 | 6065242176 | `e62d10f584205ac02473b73e93c08c988e848b1fdec9a529f38ee890293bccf7` | Original same-name .img replaced |
+Source commits: W103D `9f799c88e7d52022a335425c348bd7cf14421b5d` (`w103d-burn-6.18`),
+W102D `5fd8658ba72982037348e1f8b60672a813fec140` (`w102d-burn-6.18`). Source archives contain
+these exact commits; this documentation-only follow-up records output hashes.
 
-The currently locked W103D final .img and top-level manifest/sha256/source
-still describe the older image: `1654cff9c9a807aa8706ee64d98b9bba180059ea9d107a9fb5b20ed0a13b9f2e`.
-They will be updated together after the file is released.
+The complete desktop contract contains 103 explicit
+packages, satisfied by 1560 installed packages and
+Debian virtual providers. Added notification/XDG tools, Vulkan ICDs/tools,
+file/archive/media utilities, GTK4/Qt5 input methods, viewers/thumbnails,
+GTK appearance, wallet, SMB/exFAT, Discover/PackageKit, printing, KDE Connect,
+LibreOffice with KDE integration and Simplified Chinese UI/offline help,
+and Firefox Simplified Chinese. KDE translations are shipped by KDE packages.
 
-New build source commits: W103D `9f799c88e7d52022a335425c348bd7cf14421b5d` and
-W102D `5fd8658ba72982037348e1f8b60672a813fec140` on their respective burn-6.18 branches.
-Both code commits are pushed. Documentation-only follow-ups record this status.
+Validation passed: explicit package/provider and Chinese resource checks,
+dpkg audit and APT dependency check, actual ARM64 ordinary-user application
+startup and Chinese LibreOffice PDF conversion, software Vulkan enumeration,
+ordinary-user IPv4/IPv6 ping, BlueDevil Global configuration, original pairing
+backport and board upgrade protection, exact wireless hashes and full
+6.18.49-ophub ABI, boot FAT script LF/source/CRC, firmware/initramfs,
+filesystems, container payload and sparse expansion checks.
 
-The new roots include all audited desktop and optional packages, complete
-LibreOffice with KDE integration, Simplified Chinese UI/offline help,
-Java/report support, compatible fonts and Chinese Firefox. There are 1560
-installed packages (367 added), with no existing package upgrade or removal.
+QEMU virt clean first boot and root/armbian SSH pass on the new root.
+QEMU directly loads the kernel and bypasses physical U-Boot; it does not
+validate W103D/W102D hardware. W102D passes 26 capacity bootstrap cases;
+its rootfs/bootfs are byte-identical to this tested W103D base.
 
-Passed: explicit packages/providers and Chinese resources, APT/dpkg checks,
-actual ARM64 ordinary-user application startup and Chinese PDF export,
-Lavapipe software Vulkan enumeration, ping/sysctl and BlueDevil Global config,
-pairing backport and board package protection, exact module hashes/full
-6.18.49-ophub ABI, firmware/kernel/DTB/initramfs, FAT script LF/source/CRC,
-filesystems, containers, payload verification and sparse expansion checks.
-The new W103D root passes QEMU virt startup and root/armbian SSH. W102D shares
-its identical rootfs/bootfs and passes all 26 capacity bootstrap cases.
+PanVK is not enabled globally. The Vulkan runtime test selects Lavapipe
+software rendering, not Mali-G31 GPU acceleration. Hardware Vulkan,
+mouse startup reconnection, printers, network shares and W102D hardware
+compatibility remain untested in this build. Scan packet loss is unresolved.
+No kernel/module rebuild or physical flashing was performed.
 
-QEMU bypasses physical U-Boot and is not a board flash test. Hardware Vulkan,
-mouse reconnection and external peripheral functions remain untested.
-PanVK is not enabled globally; KWin retains the tested Panfrost GLES backend.
-No kernel or module rebuild. Existing scan packet loss remains unresolved.
+Rootfs SHA-256: `0df21ee28bfc6dd0a27f0c162e5a64d8dd9219a05ec9d984c769157cd7401b0e`.
+Bootfs SHA-256: `1072db34ebc8f9a711ef1f42ea4c12d925828dd59cb41de0334ca8faa182db23`.
 
-Current evidence: `output/research/20260908-full-desktop` and new build checks.
-Finish W103D after closing the burning tool using the staged verified image;
-update the manifest, source archive, instructions and this status together.
+All earlier hashes for these filenames are superseded. Current evidence:
+`output/research/20260908-full-desktop-unlocked`, delivery `checks/full-desktop-unlocked` and
+`checks/root-preparation`. Earlier git-lf-rebuild/boot-repair folders are
+historical evidence. Build recipe: [v8-README.md](v8-README.md).
