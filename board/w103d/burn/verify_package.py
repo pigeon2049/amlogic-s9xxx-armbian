@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Independently verify container payloads, sparse expansion and bootstrap init."""
 import argparse,gzip,hashlib,json,pathlib,struct,zlib
+from boot_script import verify_fat
 
 def hash_file(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
@@ -70,6 +71,8 @@ def main():
             assert f.read(r['bytes'])==('sha1sum '+part['sha1']).encode(),r['sub']
     for part,raw in [('system','bootfs.raw'),('data','rootfs.raw')]:
         assert sparse_hash(payloads/(part+'.PARTITION'))==hash_file(work/raw)
+    script_report = verify_fat(work / 'bootfs.raw')
+    (work/'checks/boot-script.json').write_text(json.dumps(script_report, indent=2))
     boot=(payloads/'boot.PARTITION').read_bytes()
     ksize,_,rsize=struct.unpack_from('<III',boot,8);page=struct.unpack_from('<I',boot,36)[0]
     kernel=boot[page:page+ksize];off=page+((ksize+page-1)//page)*page

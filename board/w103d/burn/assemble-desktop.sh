@@ -5,6 +5,7 @@ set -euo pipefail
 [[ $# == 4 ]] || { echo "Usage: $0 SERVER_ASSEMBLY CLEAN_DESKTOP_ROOT.raw WORKDIR TOOLS" >&2; exit 2; }
 base=$(realpath "$1"); rootimg=$(realpath "$2"); work=$(realpath -m "$3"); tools=$(realpath "$4")
 scripts=$(cd "$(dirname "$0")" && pwd)
+python3 "$scripts/boot_script.py" --source "$scripts/emmc_autoscript.cmd"
 test "$work" != "$base"
 test ! -e "$work/payloads"
 mkdir -p "$work"/{payloads,bootstrap,checks,root,boot}
@@ -23,6 +24,7 @@ mount -o loop,ro "$work/rootfs.raw" "$work/root"
 mount -o loop "$work/bootfs.raw" "$work/boot"
 mkimage -A arm -O linux -T script -C none -n 'W103D 6.18 eMMC' -d "$scripts/emmc_autoscript.cmd" "$work/boot/emmc_autoscript" > "$work/checks/bootscript.log"
 cp "$scripts/emmc_autoscript.cmd" "$work/boot/emmc_autoscript.cmd"
+python3 "$scripts/boot_script.py" --boot-dir "$work/boot" > "$work/checks/boot-script.json"
 python3 "$scripts/../validation/verify_image.py" --rootfs "$work/root" --bootfs "$work/boot" --release 6.18.49-ophub > "$work/checks/components.log"
 # This recipe loads the Wi-Fi driver from the root filesystem. Refuse a
 # stale embedded copy instead of silently booting an older scan implementation.

@@ -1,5 +1,12 @@
 # KDE v8: correct Bluetooth startup and ordinary-user ping
 
+Same-version boot repair: the first v8/v4 artifacts contained CRLF in the
+compiled eMMC script because Windows git archive applied core.autocrlf.
+`.cmd` now has explicit LF attributes. Assembly checks source and compiled
+legacy script CRCs/content, and final package verification extracts the
+script from the actual FAT image using mtools. Repaired files replace the
+original v8/v4 names; do not increment release numbers without user approval.
+
 W103D v8 and W102D v4 replace the ineffective `[General]` Bluetooth policy
 in v7/v3 with `[Global]`, as read by the shipped BlueDevil 6.3.4. They also
 install `net.ipv4.ping_group_range = 0 2147483647` through sysctl.d so normal

@@ -44,6 +44,7 @@ mount -o loop,ro "$base/bootfs.raw" "$checkboot"
 python3 "$shared/wireless_modules.py" "$checkroot"
 python3 "$shared/desktop/verify-bluetooth.py" "$checkroot"
 python3 "$shared/desktop/verify-root.py" "$checkroot"
+python3 "$shared/boot_script.py" --boot-dir "$checkboot"
 python3 "$shared/../fixes/bluedevil/verify-root.py" "$checkroot"
 python3 "$shared/../validation/verify_image.py" --rootfs "$checkroot" --bootfs "$checkboot" --release 6.18.49-ophub
 entries=$(lsinitramfs "$checkboot/initrd.img-6.18.49-ophub")
@@ -56,7 +57,7 @@ trap - EXIT
 test -f "$logo"
 test -x "$tools/aml_image_v2_packer_new"
 mkdir -p "$work"/{payloads,bootstrap,checks}
-for report in bluedevil bluetooth-startup wireless-modules desktop; do
+for report in bluedevil bluetooth-startup wireless-modules desktop boot-script; do
     cp "$base/checks/$report.json" "$work/checks/$report.json"
 done
 python3 "$source/test_bootstrap.py" --output "$work/checks/bootstrap-tests"
