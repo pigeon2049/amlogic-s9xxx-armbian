@@ -2,6 +2,10 @@
 
 Date: 2026-09-07. Source changes apply to both W103D and W102D desktop roots.
 
+Subsequent release: both branches were pushed and W103D v8 / W102D v4 were
+assembled and verified. See [v8-validation.md](v8-validation.md). The remaining
+text records the initial diagnosis before that packaging follow-up.
+
 The v7/v3 configurator incorrectly wrote `launchState` and `bluetoothBlocked`
 in `[General]`. The shipped `4:6.3.4-2+w103d1` daemon and settings page read
 `[Global]`: checked against upstream tag v6.3.4, `src/kded/devicemonitor.cpp`
