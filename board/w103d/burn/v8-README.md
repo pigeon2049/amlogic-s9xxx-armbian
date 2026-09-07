@@ -22,10 +22,37 @@ are checked before installation and again during assembly.
 bash board/w103d/burn/prepare-wireless-root.sh \
   /work/w103d-v6/rootfs.raw /work/kde-v8 \
   /work/connection-rate-final.ko /work/mac80211-data-rate.ko
+mount -o loop /work/kde-v8/rootfs.raw /work/kde-v8/root
+bash board/w103d/burn/install-desktop-packages.sh \
+  /work/kde-v8/root /work/kde-v8/checks
+umount /work/kde-v8/root
 bash board/w103d/burn/assemble-desktop.sh \
   /work/w103d-v6 /work/kde-v8/rootfs.raw /work/w103d-v8 /work/khadas-tools
 python3 board/w103d/burn/verify_package.py /work/w103d-v8 --logo /work/bootup.bmp
 ```
+
+The same v8/v4 filenames now also include the complete desktop package list:
+notification/XDG tools, Vulkan ICDs and diagnostics, file/archive/media tools,
+GTK4/Qt5 input frontends, viewers/thumbnails, GTK theme integration, wallet,
+SMB/exFAT tools, Discover/PackageKit, printing, KDE Connect, LibreOffice with
+KDE integration, Simplified Chinese UI/offline help, Java/report support,
+office-compatible fonts, and Chinese Firefox.
+KDE translations ship with the individual Debian KDE packages. There is no
+separate obsolete kde-l10n-zhcn package to install on Plasma 6.
+
+The offline package installer requires ARM64 binfmt, uses private mounts and
+policy-rc.d, restores the resolver and Armbian sources, and rejects package
+removals or changes to board/boot/pairing packages. It does not run a full
+distribution upgrade. Assembly checks every explicit package or its provider,
+key executables, Chinese resources and both Vulkan ICD files. PanVK remains
+experimental on Mali-G31 and is not enabled globally; KWin keeps its tested
+Panfrost OpenGL ES backend. Package presence is not hardware Vulkan validation.
+
+With the prepared root mounted, `desktop/test-applications.sh ROOT CHECKS_DIR`
+uses actual ARM64 binaries as the ordinary user, exports a Chinese document
+with headless LibreOffice, checks extracted PDF text and enumerates Lavapipe.
+It needs ARM64 binfmt and host `pdftotext` (poppler-utils). Profiles and test
+input use a private tmpfs; the shipping root is not personalized by the test.
 
 The baseline migration check explicitly permits only the absence of the new
 ping policy; all other desktop checks remain required. Final-root checks
