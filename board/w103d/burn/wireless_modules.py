@@ -7,6 +7,7 @@ import json
 import lzma
 from pathlib import Path
 import subprocess
+import tempfile
 
 MANIFEST = json.loads(Path(__file__).with_name('wireless-modules.json').read_text())
 
@@ -31,17 +32,22 @@ def validate(path, name):
         data = subprocess.check_output(['zstd', '-qdc', str(path)])
     if hashlib.sha256(data).hexdigest() != MANIFEST['modules'][name]['sha256']:
         raise RuntimeError(f'{name}: not the tested connection-probe/TX-reporting artifact')
-    def field(key):
-        return subprocess.check_output(['modinfo', '-F', key, str(path)], text=True).strip()
-    if field('vermagic').split()[0] != MANIFEST['release']:
-        raise RuntimeError(f'{name}: full module release mismatch')
-    required = {'cfg80211'}
-    if name == 'mt7663s':
-        required.update('mt76-connac-lib,btmtksdio,mt7663-usb-sdio-common,mt7615-common,mt76-sdio,mt76,mac80211'.split(','))
-        if 'sdio:c*v037Ad7603*' not in field('alias').splitlines():
-            raise RuntimeError('Missing MT7663S SDIO alias')
-    if not required <= set(field('depends').split(',')):
-        raise RuntimeError(f'{name}: required dependencies missing')
+    # Inspect uncompressed bytes: host libkmod builds do not all support
+    # every compression format used in target module trees.
+    with tempfile.NamedTemporaryFile(suffix='.ko') as module:
+        module.write(data)
+        module.flush()
+        def field(key):
+            return subprocess.check_output(['modinfo', '-F', key, module.name], text=True).strip()
+        if field('vermagic').split()[0] != MANIFEST['release']:
+            raise RuntimeError(f'{name}: full module release mismatch')
+        required = {'cfg80211'}
+        if name == 'mt7663s':
+            required.update('mt76-connac-lib,btmtksdio,mt7663-usb-sdio-common,mt7615-common,mt76-sdio,mt76,mac80211'.split(','))
+            if 'sdio:c*v037Ad7603*' not in field('alias').splitlines():
+                raise RuntimeError('Missing MT7663S SDIO alias')
+        if not required <= set(field('depends').split(',')):
+            raise RuntimeError(f'{name}: required dependencies missing')
     return data
 
 
