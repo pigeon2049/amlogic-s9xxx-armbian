@@ -1,0 +1,35 @@
+# This repository builds Linux images. Text must stay LF on every host,
+# including Windows checkout and git archive with core.autocrlf=true.
+* text=auto eol=lf
+
+# Executable/source scripts must never rely on automatic text detection.
+*.sh text eol=lf
+*.py text eol=lf
+*.cmd text eol=lf
+
+# Preserve opaque images, firmware, boot scripts and other binary assets.
+*.bin binary
+*.img binary
+*.scr binary
+*.dtb binary
+*.dtbo binary
+*.ko binary
+*.so binary
+*.sd binary
+*.usb binary
+*.gz binary
+*.xz binary
+*.zst binary
+*.zip binary
+*.deb binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.ico binary
+*.pdf binary
+*.PDF binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.xlsx binary
