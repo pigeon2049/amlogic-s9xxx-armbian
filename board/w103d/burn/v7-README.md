@@ -1,5 +1,7 @@
 # KDE v7: Bluetooth startup and both wireless fixes
 
+Generated artifacts and verification boundaries: [v7-validation.md](v7-validation.md).
+
 The v7 recipe enables `bluetooth.service`, explicitly sets BlueZ
 `[Policy] AutoEnable=true`, and sets KDE BlueDevil `[General] launchState=enable`
 and `bluetoothBlocked=false` for the default user and future users.
