@@ -1,10 +1,11 @@
 # W103D experimental USB Burning Tool image
 
-Current desktop recipe: [KDE v7 Bluetooth startup and wireless fixes](v7-README.md).
+Current desktop recipe: [KDE v8](v8-README.md).
+Shared W103D/W102D bootstrap: [capacity fix and unified build](unified-capacity.md).
 It requires both tested wireless modules and rejects older same-release copies.
 
 This is a board-specific image recipe for the
-32 GB W103D with 60,620,800 eMMC sectors. Its normal runtime is
+W103D/W102D layout, accepting actual eMMC capacity whenever the image fits. Its normal runtime is
 `6.18.49-ophub`. It uses the tested 2021 N9 firmware, SHA-256
 `223f73f17f0f986dc4e7167daa6eef14ffb41c713f22d70f9645eb049bdec80a`.
 

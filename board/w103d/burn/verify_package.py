@@ -41,6 +41,15 @@ def cpio_files(data):
 def main():
     p=argparse.ArgumentParser();p.add_argument('work',type=pathlib.Path);p.add_argument('--logo',type=pathlib.Path,required=True);a=p.parse_args()
     work=a.work;images=list(work.glob('*.burn.img'));assert len(images)==1
+    # Runtime bootstrap tests ext4 extent; raw/sparse packaging must match it.
+    with (work/'rootfs.raw').open('rb') as f:
+        f.seek(1024);sb=f.read(1024)
+    assert sb[56:58]==b'\x53\xef'
+    blocks=struct.unpack_from('<I',sb,4)[0];log=struct.unpack_from('<I',sb,24)[0]
+    high=struct.unpack_from('<I',sb,336)[0] if struct.unpack_from('<I',sb,96)[0]&0x80 else 0
+    assert log<=6 and blocks>0 and high==0
+    assert blocks*(1024<<log)==(work/'rootfs.raw').stat().st_size
+    assert 1954*2048+(work/'rootfs.raw').stat().st_size//512<=4294967295
     img=images[0];payloads=work/'payloads';records=[]
     with img.open('rb') as f:
         header=f.read(64)

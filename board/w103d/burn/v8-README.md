@@ -1,3 +1,6 @@
+Current capacity-unified delivery: [reason, compatibility and rebuild](unified-capacity.md).
+W103D v8 and the legacy W102D v4 filename now carry identical firmware bytes.
+
 # KDE v8: correct Bluetooth startup and ordinary-user ping
 
 Same-version boot repair: the first v8/v4 artifacts contained CRLF in the
@@ -78,8 +81,7 @@ bash board/w102d/burn/build.sh \
 ```
 
 New output directories must not exist. W102D input and output must be on the
-same filesystem for immutable hardlinks. W102D retains its 16 GB capacity
-bootstrap; other payloads match W103D. Clean images contain no Wi-Fi profiles
+same filesystem for immutable hardlinks. W102D delegates to the shared capacity-adaptive bootstrap; all payloads match W103D. Clean images contain no Wi-Fi profiles
 or Bluetooth pairing keys. Pair peripherals once after flashing. Hardware
 mouse reconnection and W102D compatibility remain to be verified; existing
 wireless scan packet loss is not addressed by this userspace change.

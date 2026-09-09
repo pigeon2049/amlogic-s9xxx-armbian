@@ -9,7 +9,8 @@ typedef unsigned char u8;
 #define ENV_OFF (180u * 1048576u)
 #define BOOT_OFF (730u * 1048576u)
 #define ROOT_OFF (1954u * 1048576u)
-#define EMMC_SECTORS 60620800u
+/* Measured 512-byte sector count. MBR permits at most UINT32_MAX sectors. */
+static u32 emmc_sectors;
 static u8 env[ENV_BYTES], next[ENV_BYTES], ept[4096], sector[1024];
 
 static long sc(long n, long a, long b, long c, long d, long e) {
@@ -27,7 +28,7 @@ static unsigned len(const char *s) { unsigned n=0;while(s[n])n++;return n; }
 static int eq(const void *a,const void *b,unsigned n) { const u8 *x=a,*y=b;while(n--)if(*x++!=*y++)return 0;return 1; }
 static void say(const char *s) { sc(4,1,(long)s,len(s),0,0); }
 static void stop(const char *s) {
-    say("W103D bootstrap: ");say(s);say("\n");
+    say("W103D/W102D bootstrap: ");say(s);say("\n");
 #ifdef TEST_HOST
     sc(1,1,0,0,0,0);
 #endif
@@ -53,7 +54,8 @@ static void check_partition(const char *name,u32 off,u32 size,int large) {
         if(eq(p,name,len(name)+1)) {
             if(le32(p+24)!=off || le32(p+28))stop("unexpected EPT offset");
             if(!large && (le32(p+16)!=size || le32(p+20)))stop("unexpected EPT size");
-            if(large && (le32(p+16)!=(EMMC_SECTORS-(ROOT_OFF/512u))*512u || le32(p+20)!=6u))
+            if(large && (le32(p+16)!=((emmc_sectors-ROOT_OFF/512u)<<9) ||
+                         le32(p+20)!=((emmc_sectors-ROOT_OFF/512u)>>23)))
                 stop("unexpected EPT root capacity");
             return;
         }
@@ -84,6 +86,15 @@ static void provision(int fd) {
         stop("BOOT filesystem signature mismatch");
     at(fd,ROOT_OFF+1024,sector,1024,0);
     if(sector[56]!=0x53 || sector[57]!=0xef || !eq(sector+120,"W103D_ROOT\0",11))stop("ROOTFS signature mismatch");
+    /* Compare ext4 size in sectors without overflowing ARM32 arithmetic.
+     * A fitting filesystem within MBR limits cannot need blocks_count_hi.
+     * That high word is meaningful only with EXT4_FEATURE_INCOMPAT_64BIT.
+     */
+    u32 log_block=le32(sector+24), blocks=le32(sector+4);
+    if(log_block>6u || !blocks ||
+       ((le32(sector+96)&0x80u) && le32(sector+336)) ||
+       blocks>((emmc_sectors-ROOT_OFF/512u)>>(log_block+1u)))
+        stop("ROOTFS does not fit measured eMMC capacity");
     at(fd,ENV_OFF,env,ENV_BYTES,0);
     if(le32(env)!=crc32(env+4,ENV_BYTES-4))stop("invalid U-Boot environment CRC");
     unsigned pos=4,dst=4;
@@ -111,7 +122,7 @@ static void provision(int fd) {
         u8 *p=sector+6+i*16;p[1]=p[5]=0xfe;p[2]=p[3]=p[6]=p[7]=0xff;
         p[4]=i?0x83:0x0c;
         put32(p+8,(i?ROOT_OFF:BOOT_OFF)/512u);
-        put32(p+12,i?EMMC_SECTORS-ROOT_OFF/512u:2097152u);
+        put32(p+12,i?emmc_sectors-ROOT_OFF/512u:2097152u);
     }
     sector[70]=0x55;sector[71]=0xaa;
     at(fd,440,sector,72,1);
@@ -122,12 +133,27 @@ static void provision(int fd) {
     if(sc(118,fd,0,0,0,0))stop("environment sync failed");
     at(fd,ENV_OFF,env,ENV_BYTES,0);
     if(!eq(env,next,ENV_BYTES))stop("environment readback mismatch");
-    say("W103D bootstrap: boot entry installed and verified; starting Armbian\n");
+    say("W103D/W102D bootstrap: boot entry installed and verified; starting Armbian\n");
 }
-static unsigned decimal(const char *s) { unsigned v=0;while(*s>='0'&&*s<='9')v=v*10+*s++-'0';return v; }
+static unsigned decimal(const char *s) {
+    unsigned v=0,n=0;
+    while(*s>='0'&&*s<='9') {
+        unsigned digit=(unsigned)(*s++-'0');
+        if(v>429496729u || (v==429496729u && digit>5u))return 0;
+        v=v*10u+digit;n++;
+    }
+    if(*s=='\n')s++;
+    if(!n || *s)return 0;
+    return v;
+}
+static int capacity_ok(unsigned sectors) {
+    return sectors>ROOT_OFF/512u;
+}
 void entry(unsigned *stack) {
 #ifdef TEST_HOST
-    if(stack[0]!=2)stop("test requires an image path");
+    if(stack[0]!=3)stop("test requires image path and sector count");
+    emmc_sectors=decimal((char*)stack[3]);
+    if(!capacity_ok(emmc_sectors))stop("eMMC cannot contain the fixed partition layout");
     int fd=openfile((char*)stack[2],2);
     if(fd<0)stop("cannot open test image");
     provision(fd);sc(6,fd,0,0,0,0);sc(1,0,0,0,0,0);
@@ -138,7 +164,7 @@ void entry(unsigned *stack) {
     sc(21,(long)"sysfs",(long)"/sys",(long)"sysfs",0,0);
     sc(21,(long)"devtmpfs",(long)"/dev",(long)"devtmpfs",0,0);
     int fd=-1;
-    /* Wait for asynchronous MMC probing. Require eMMC boot0 and exact size. */
+    /* Require eMMC boot0 and measured capacity; no model or vendor size whitelist. */
     for(unsigned attempt=0;attempt<30 && fd<0;attempt++) {
         for(char i='0';i<='3';i++) {
             char sizepath[]="/sys/class/block/mmcblk0/size";
@@ -148,17 +174,19 @@ void entry(unsigned *stack) {
             int s=openfile(bootpath,0);if(s<0)continue;sc(6,s,0,0,0,0);
             s=openfile(sizepath,0);if(s<0)continue;
             char text[32]={0};long n=sc(3,s,(long)text,31,0,0);sc(6,s,0,0,0,0);
-            if(n<=0 || decimal(text)!=EMMC_SECTORS)continue;
+            unsigned sectors=decimal(text);
+            if(n<=0 || n>=31 || !capacity_ok(sectors))continue;
             char numberpath[]="/sys/class/block/mmcblk0/dev";
             numberpath[23]=i;
             s=openfile(numberpath,0);if(s<0)continue;
             memset(text,0,sizeof(text));n=sc(3,s,(long)text,31,0,0);sc(6,s,0,0,0,0);
             unsigned colon=0;while(colon<31 && text[colon] && text[colon]!=':')colon++;
-            if(n<=0 || colon==31 || text[colon]!=':')continue;
+            if(n<=0 || n>=31 || colon==31 || text[colon]!=':')continue;
+            text[colon]=0;
             unsigned major=decimal(text),minor=decimal(text+colon+1);
             sc(14,(long)devpath,060600,(minor&255)|(major<<8)|((minor&~255u)<<12),0,0);
             fd=openfile(devpath,2);
-            if(fd>=0)break;
+            if(fd>=0) { emmc_sectors=sectors;break; }
         }
         if(fd<0) { long ts[2]={1,0};sc(162,(long)ts,0,0,0,0); }
     }

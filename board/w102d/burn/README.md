@@ -1,3 +1,20 @@
+# W102D / W103D unified image (legacy v4 entry)
+
+The separate capacity version has been retired. Both models use the same
+bootstrap and identical image content; the old v4 filename is retained as a
+compatibility alias. There is no nominal-capacity whitelist. The measured
+device must contain the fixed layout and the actual root filesystem.
+
+See [the common implementation and failure diagnosis](../../w103d/burn/unified-capacity.md).
+The build command below remains supported and delegates to the shared builder:
+
+```sh
+bash board/w102d/burn/build.sh /work/verified-v8 /work/unified-v4 /work/tools /work/bootup.bmp
+```
+
+The following sections record historical releases and their former limits;
+current behavior is defined by the shared documentation above.
+
 # W102D 2 GB / 16 GB capacity trial
 
 The current v4 recipe requires the corrected Bluetooth-startup, ping-permission and wireless-fixed W103D KDE v8 assembly.
