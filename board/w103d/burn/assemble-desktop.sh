@@ -11,10 +11,13 @@ test ! -e "$work/payloads"
 mkdir -p "$work"/{payloads,bootstrap,checks,root,boot}
 cp --reflink=auto --sparse=always "$rootimg" "$work/rootfs.raw"
 cp --reflink=auto --sparse=always "$base/bootfs.raw" "$work/bootfs.raw"
-cp "$base/bootstrap/init" "$work/bootstrap/init"
-for name in DDR.USB _aml_dtb.PARTITION platform.conf boot.PARTITION recovery.PARTITION dtbo.PARTITION vbmeta.PARTITION logo.PARTITION image.cfg; do
+python3 "$scripts/test_bootstrap.py" --output "$work/checks/bootstrap-tests"
+clang --target=arm-linux-gnueabi -march=armv7-a -marm -Os -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -static -fuse-ld=lld -Wl,--build-id=none -Wl,-e,_start "$scripts/bootstrap.c" -o "$work/bootstrap/init"
+for name in DDR.USB _aml_dtb.PARTITION platform.conf dtbo.PARTITION vbmeta.PARTITION logo.PARTITION image.cfg; do
     cp "$base/payloads/$name" "$work/payloads/$name"
 done
+python3 "$scripts/make_bootstrap.py" "$base/payloads/boot.PARTITION" "$work/bootstrap/init" "$work/payloads/boot.PARTITION"
+cp "$work/payloads/boot.PARTITION" "$work/payloads/recovery.PARTITION"
 cleanup() {
     mountpoint -q "$work/root" && umount "$work/root" || true
     mountpoint -q "$work/boot" && umount "$work/boot" || true
