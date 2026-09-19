@@ -20,7 +20,7 @@ build_args=(-C "$kernel_source" O="$kernel_output"
 version=$(make -s "${build_args[@]}" kernelversion)
 series=${version%.*}
 case "$series" in
-    6.12|6.18) ;;
+    6.18) ;;  # 6.12 retired 2026-09-20; fragment removed
     *) echo "Unsupported kernel series: $version" >&2; exit 1 ;;
 esac
 fragment="$repo/board/w103d/linux/w103d-$series.config"

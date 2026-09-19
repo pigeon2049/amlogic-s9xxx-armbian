@@ -18,7 +18,7 @@ def same_text(left, right):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('kernel', type=Path, help='Git checkout of the unpatched kernel revision')
-    parser.add_argument('--series', required=True, choices=['6.12', '6.18'])
+    parser.add_argument('--series', required=True, choices=['6.18'])  # 6.12 series retired 2026-09-20
     args = parser.parse_args()
     kernel = args.kernel.resolve()
     repo = Path(__file__).resolve().parents[3]
