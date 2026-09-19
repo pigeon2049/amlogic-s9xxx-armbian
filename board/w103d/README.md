@@ -1,29 +1,23 @@
 # ZTE W103D board support
 
 This port targets the ZTE W103D (Amlogic S905L3A/G12A, 2 GiB RAM,
-32 GiB eMMC) with Linux 6.12.107, 6.18.49 and 6.18.52 (production).
+32 GiB eMMC) with Linux 6.18.52 (production; 6.12.107 retired 2026-09-20,
+rollback stays on-board only, rebuild inputs removed).
 It provides a standalone board DTS,
 kernel configuration fragment, MT7663S Wi-Fi/SDIO Bluetooth integration,
 and a model-database entry. Boot and wireless validation used removable
 USB media and the vendor U-Boot; eMMC installation is not validated.
 
 Linux 6.18 uses its own [patch series](../../compile-kernel/tools/patch/linux-6.18.y/README.md)
-and `linux/w103d-6.18.config`. The hardware results below apply to 6.12;
-6.18 validation is recorded separately in [linux/6.18-validation.md](linux/6.18-validation.md).
+and `linux/w103d-6.18.config`. 6.18 validation is recorded in
+[linux/6.18-validation.md](linux/6.18-validation.md) and the production
+record in [linux/6.18.52-build.md](linux/6.18.52-build.md).
 
 ## Kernel integration
 
-Apply the seven patches in `compile-kernel/tools/patch/linux-6.12.y` in
-numbered order. They were built against `unifreq/linux-6.12.y` commit
-`4c81f10ed9fea62e29081f0d2a129f1b59bf2fe5` (6.12.107):
-
-1. Add the standalone `meson-g12a-w103d.dts` and DTB build target.
-2. Handle Meson SRAM transfer alignment and the W103D SDIO setup.
-3. Install the isolated MT7663S transport, firmware and aggregation support.
-4. Route GPIOX SDIO pins to SD_EMMC_B, which supports descriptor DMA.
-5. Coordinate same-card Bluetooth and Wi-Fi initialization and teardown.
-6. Complete successful, copy-free W103D SDIO requests in the hard IRQ.
-7. Exclude Null connection probes from mac80211 payload TX bitrate reporting.
+Apply the seven patches in `compile-kernel/tools/patch/linux-6.18.y` in
+numbered order (see that directory's README). The 6.12 series was retired
+2026-09-20 and removed from this tree.
 
 The [2026-09-07 scan/probe and bitrate follow-up](linux/scan-rate-validation.md)
 records the remaining scan-triggered disconnect fix, KDE bitrate reporting
@@ -67,8 +61,7 @@ for lifecycle details and boundaries.
 
 ## Build and ABI checks
 
-Layer the matching `linux/w103d-6.12.config` or `linux/w103d-6.18.config`
-on ophub/kernel's stable config and run `olddefconfig` after applying the
+Layer `linux/w103d-6.18.config` on ophub/kernel's stable config and run `olddefconfig` after applying the
 matching patch series. The normal compile workflow now merges this fragment
 automatically when the W103D combo header is present. Verify
 `CONFIG_MT7663S_W103D_COMBO=y` with both SDIO drivers enabled.
@@ -89,8 +82,8 @@ make -C "$KERNEL_SRC" O="$KERNEL_OUT" \
 
 Before replacing a running kernel's modules, the first field from
 `modinfo -F vermagic` must exactly equal the target board's `uname -r`.
-Validated releases are `6.12.107-ophub`, `6.18.49-ophub` and `6.18.52-ophub`
-(production); missing suffixes,
+Validated release is `6.18.52-ophub` (production; `6.18.49-ophub` retained
+only as re-flash rollback, `6.12.107-ophub` retired); missing suffixes,
 `+` suffixes and prefix-only matches are not valid. A whole-kernel upgrade
 must select a complete matched Image, DTB, initramfs and module directory,
 then verify the actual running release and loaded build IDs after boot.
@@ -141,12 +134,13 @@ Canonical board identity: `BOARD=s905l3a-w103d`, FDT
 `meson-g12a-w103d.dtb`, model `ZTE W103D`. The box has eFuse secure-boot;
 the vendor FIP passes through untouched (see the burn branch).
 
-## Validation on 2026-09-05
+## Validation on 2026-09-05 (6.12 lineage, retired)
 
-The final kernel and modules were tested on the physical board running
-`6.12.107-ophub`, with USB Ethernet and USB Wi-Fi disconnected. Data and TCP
-ACKs used onboard Wi-Fi, associated at 5 GHz/VHT80/NSS2; the built-in Ethernet
-had no carrier.
+The 6.12 validation below is kept as a historical record; its rebuild
+inputs were removed 2026-09-20. The final kernel and modules were tested
+on the physical board running `6.12.107-ophub`, with USB Ethernet and USB
+Wi-Fi disconnected. Data and TCP ACKs used onboard Wi-Fi, associated at
+5 GHz/VHT80/NSS2; the built-in Ethernet had no carrier.
 
 - Patch series applies cleanly; review copies match the patched sources.
 - Native tests execute the actual RX enhance, combo and MMC IRQ C code
