@@ -1,7 +1,8 @@
 # ZTE W103D board support
 
 This port targets the ZTE W103D (Amlogic S905L3A/G12A, 2 GiB RAM,
-32 GiB eMMC) with Linux 6.12.107 and 6.18.49. It provides a standalone board DTS,
+32 GiB eMMC) with Linux 6.12.107, 6.18.49 and 6.18.52 (production).
+It provides a standalone board DTS,
 kernel configuration fragment, MT7663S Wi-Fi/SDIO Bluetooth integration,
 and a model-database entry. Boot and wireless validation used removable
 USB media and the vendor U-Boot; eMMC installation is not validated.
@@ -88,7 +89,8 @@ make -C "$KERNEL_SRC" O="$KERNEL_OUT" \
 
 Before replacing a running kernel's modules, the first field from
 `modinfo -F vermagic` must exactly equal the target board's `uname -r`.
-Validated releases are `6.12.107-ophub` and `6.18.49-ophub`; missing suffixes,
+Validated releases are `6.12.107-ophub`, `6.18.49-ophub` and `6.18.52-ophub`
+(production); missing suffixes,
 `+` suffixes and prefix-only matches are not valid. A whole-kernel upgrade
 must select a complete matched Image, DTB, initramfs and module directory,
 then verify the actual running release and loaded build IDs after boot.
@@ -126,8 +128,18 @@ The same check can be run independently on an assembled image tree:
 
 ```sh
 python3 board/w103d/validation/verify_image.py \
-  --rootfs "$ROOTFS" --bootfs "$BOOTFS" --release 6.18.49-ophub
+  --rootfs "$ROOTFS" --bootfs "$BOOTFS" --release 6.18.52-ophub
 ```
+
+## Production (6.18.52 + mainline U-Boot chainload)
+
+The 6.18.52 server line is the production deliverable (board-tested
+2026-09-20): kernel build record in [linux/6.18.52-build.md](linux/6.18.52-build.md),
+burn assembly in [burn/assemble.sh](burn/assemble.sh), U-Boot port notes in
+[uboot/README.md](uboot/README.md). The box has eFuse secure-boot, so the
+vendor FIP passes through untouched and mainline U-Boot chainloads from
+`u-boot.ext`. Canonical board identity: `BOARD=s905l3a-w103d`,
+FDT `meson-g12a-w103d.dtb` (`/dtb-w103d/`), model `ZTE W103D`.
 
 ## Validation on 2026-09-05
 

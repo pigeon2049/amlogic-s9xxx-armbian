@@ -11,7 +11,7 @@ def read(p): return (r/p).read_text()
 assert read('etc/hostname').strip()=='armbian'
 if not args.before_permissions_fix:
  assert 'net.ipv4.ping_group_range = 0 2147483647' in read('etc/sysctl.d/99-w103d-ping.conf')
-assert any(line in ('BOARD=w103d', 'BOARD="w103d"') for line in read('etc/armbian-release').splitlines())
+assert any(line in ('BOARD=w103d', 'BOARD="w103d"', 'BOARD=s905l3a-w103d', 'BOARD="s905l3a-w103d"') for line in read('etc/armbian-release').splitlines())
 preferences=read('etc/apt/preferences.d/99-w103d-board-components')
 assert 'Pin-Priority: -1' in preferences
 for pattern in ['armbian-bsp-*','armbian-firmware*','linux-image-*','linux-dtb-*','linux-u-boot-*','linux-headers-*']:

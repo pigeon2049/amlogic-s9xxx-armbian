@@ -7,7 +7,7 @@ source=$(cd "$(dirname "$0")" && pwd)
 test "$root" != /
 mountpoint -q "$root"
 test -d "$root/usr/lib/modules/6.18.49-ophub"
-grep -Eq '^BOARD="?w103d"?$' "$root/etc/armbian-release"
+grep -Eq '^BOARD="?(w103d|s905l3a-w103d)"?$' "$root/etc/armbian-release"
 expected=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["package_sha256"])' "$source/package-check.json")
 echo "$expected  $deb" | sha256sum -c -
 test "$(dpkg-deb -f "$deb" Package)" = bluedevil

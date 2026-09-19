@@ -1,16 +1,29 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
-# Assemble a W103D-specific experimental USB Burning Tool image. No board I/O.
+# Assemble the W103D 6.18.52 production USB Burning Tool image
+# (mainline U-Boot chainload). No board I/O.
+#
+# Verified production flow (board-tested 2026-09-20):
+# - vendor DDR.USB / _aml_dtb / boot / recovery / dtbo / vbmeta / logo /
+#   platform.conf pass through byte-identical (no bootstrap patching, no
+#   logo rebuild; the box has eFuse secure-boot, FIP replacement is
+#   impossible without the vendor key)
+# - bootfs = base p1 contents + u-boot.ext (mainline, chainload) +
+#   bootup.bmp (HDMI logo) + production emmc_autoscript (+.cmd)
+# - uEnv.txt is written with the verified content below (do not trust the
+#   base image's copy: LINUX/INITRD/FDT paths are W103D-specific)
 set -euo pipefail
-[[ $# == 4 ]] || { echo "Usage: $0 BASE.img.gz WORKDIR REFERENCE_UNPACKED TOOLS" >&2; exit 2; }
+[[ $# == 6 ]] || { echo "Usage: $0 BASE.img.gz WORKDIR REFERENCE_UNPACKED TOOLS UBOOT_EXT BOOTUP_BMP" >&2; exit 2; }
 baseimg=$(realpath "$1")
 work=$(realpath -m "$2")
 reference=$(realpath "$3")
 tools=$(realpath "$4")
+ubootext=$(realpath "$5")
+bootupbmp=$(realpath "$6")
 scripts=$(cd "$(dirname "$0")" && pwd)
 board=$(dirname "$scripts")
 [[ "$work" != / && "$work" != "$HOME" && "$work" != "$reference" ]]
-mkdir -p "$work"/{payloads,checks,root,boot,bootstrap}
+mkdir -p "$work"/{payloads,checks,root,boot}
 test ! -e "$work/payloads/image.cfg"
 loop=''; bootloop=''
 cleanup() {
@@ -35,12 +48,15 @@ mkdir -p "$work/base-boot"
 mount -o ro "${loop}p1" "$work/base-boot"
 cp -r "$work/base-boot/." "$work/boot/"
 umount "$work/base-boot"
-mkimage -A arm -O linux -T script -C none -n 'W103D 6.18 eMMC' -d "$scripts/emmc_autoscript.cmd" "$work/boot/emmc_autoscript" > "$work/checks/bootscript.log"
+# Chainload U-Boot (mainline) + HDMI logo + production autoscript.
+cp "$ubootext" "$work/boot/u-boot.ext"
+cp "$bootupbmp" "$work/boot/bootup.bmp"
+mkimage -A arm64 -O linux -T script -C none -n 'W103D mainline U-Boot' -d "$scripts/emmc_autoscript.cmd" "$work/boot/emmc_autoscript" > "$work/checks/bootscript.log"
 cp "$scripts/emmc_autoscript.cmd" "$work/boot/emmc_autoscript.cmd"
 cat > "$work/boot/uEnv.txt" <<'EOF'
 LINUX=/zImage
-INITRD=/uInitrd
-FDT=/dtb/amlogic/meson-g12a-w103d.dtb
+INITRD=/ramdisk-w103d.img
+FDT=/dtb-w103d/meson-g12a-w103d.dtb
 APPEND=root=LABEL=W103D_ROOT rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 net.ifnames=0 fsck.repair=yes
 EOF
 cat > "$work/root/etc/fstab" <<'EOF'
@@ -61,25 +77,19 @@ ln -s /etc/machine-id "$work/root/var/lib/dbus/machine-id"
 find "$work/root/etc/ssh" -maxdepth 1 -name 'ssh_host_*' -type f -delete
 install -D -m644 "$scripts/ssh-hostkeys.conf" "$work/root/etc/systemd/system/ssh.service.d/10-w103d-hostkeys.conf"
 sed -i 's/^OPENSSHD_REGENERATE_HOST_KEYS=.*/OPENSSHD_REGENERATE_HOST_KEYS=false/' "$work/root/etc/default/armbian-firstrun"
-python3 "$board/validation/verify_image.py" --rootfs "$work/root" --bootfs "$work/boot" --release 6.18.49-ophub | tee "$work/checks/components.log"
-find "$work/root/etc/NetworkManager/system-connections" "$work/root/etc/wpa_supplicant" -type f -printf '%p\n' 2>/dev/null > "$work/checks/network-profile-files.txt" || true
-find "$work/root/root" -maxdepth 2 -type f -printf '%P\n' > "$work/checks/root-home-files.txt"
+python3 "$board/validation/verify_image.py" --rootfs "$work/root" --bootfs "$work/boot" --release 6.18.52-ophub | tee "$work/checks/components.log"
 sync
 umount "$work/root" "$work/boot"
 losetup -d "$bootloop";bootloop=''
 losetup -d "$loop";loop=''
 e2fsck -fn "$work/rootfs.raw" > "$work/checks/rootfs-fsck.log" 2>&1
 fsck.vfat -n "$work/bootfs.raw" > "$work/checks/bootfs-fsck.log" 2>&1
-clang --target=arm-linux-gnueabi -march=armv7-a -marm -Os -ffreestanding -fno-builtin -fno-stack-protector -nostdlib -static -fuse-ld=lld -Wl,--build-id=none -Wl,-e,_start "$scripts/bootstrap.c" -o "$work/bootstrap/init"
-python3 "$scripts/make_bootstrap.py" "$reference/boot.PARTITION" "$work/bootstrap/init" "$work/payloads/boot.PARTITION"
 python3 "$scripts/raw_to_sparse.py" "$work/bootfs.raw" "$work/payloads/system.PARTITION"
 python3 "$scripts/raw_to_sparse.py" "$work/rootfs.raw" "$work/payloads/data.PARTITION"
-cp "$reference/DDR.USB" "$reference/_aml_dtb.PARTITION" "$reference/platform.conf" "$reference/dtbo.PARTITION" "$reference/vbmeta.PARTITION" "$work/payloads/"
-mkdir -p "$work/logo-input"
-cp /mnt/d/w103d/preserved/assets/boot-logo/tieba-dog-head-bootup-1280x720.bmp "$work/logo-input/bootup.bmp"
-LD_LIBRARY_PATH="$tools/lib64" "$tools/logo_img_packer" -r "$work/logo-input" "$work/payloads/logo.PARTITION"
-# Recovery also runs the provisioning helper, never an Android factory reset.
-cp "$work/payloads/boot.PARTITION" "$work/payloads/recovery.PARTITION"
+# Vendor boot chain passes through untouched (secure-boot: no re-signing).
+for n in DDR.USB _aml_dtb.PARTITION boot.PARTITION recovery.PARTITION dtbo.PARTITION vbmeta.PARTITION logo.PARTITION platform.conf; do
+    cp "$reference/$n" "$work/payloads/$n"
+done
 cat > "$work/payloads/image.cfg" <<'EOF'
 [LIST_NORMAL]
 file="DDR.USB" main_type="USB" sub_type="DDR" file_type="normal"
@@ -97,7 +107,7 @@ file="system.PARTITION" main_type="PARTITION" sub_type="system" file_type="spars
 file="data.PARTITION" main_type="PARTITION" sub_type="data" file_type="sparse"
 file="DDR.USB" main_type="PARTITION" sub_type="bootloader" file_type="normal"
 EOF
-name=W103D_Armbian_26.8.1_6.18.49_BOOTSTRAP_v1_UNTESTED.burn.img
+name=W103D_Armbian_26.8.1_6.18.52_Server_MainlineUboot.burn.img
 "$tools/aml_image_v2_packer_new" -r "$work/payloads/image.cfg" "$work/payloads" "$work/$name" > "$work/checks/pack.log" 2>&1
 "$tools/aml_image_v2_packer_new" -c "$work/$name" > "$work/checks/container-integrity.log" 2>&1
 sha256sum "$work/$name" > "$work/$name.sha256"

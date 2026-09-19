@@ -1,0 +1,360 @@
+diff --git a/drivers/bluetooth/btmtksdio-w103d.h b/drivers/bluetooth/btmtksdio-w103d.h
+index 6b6703528..ed99d12a2 100644
+--- a/drivers/bluetooth/btmtksdio-w103d.h
++++ b/drivers/bluetooth/btmtksdio-w103d.h
+@@ -35,7 +35,7 @@ static int btmtksdio_combo_post_init(struct hci_dev *hdev)
+ 	combo->setup_status = ret;
+ 	complete_all(&combo->setup_done);
+ 	mutex_unlock(&combo->transition);
+-	dev_info(bdev->dev, "W103D: combo HCI initialization result=%d\n", ret);
++	dev_dbg(bdev->dev, "W103D: combo HCI initialization result=%d\n", ret);
+ 	return ret;
+ }
+ 
+diff --git a/drivers/bluetooth/btmtksdio.c b/drivers/bluetooth/btmtksdio.c
+index 087b00941..d4b05204f 100644
+--- a/drivers/bluetooth/btmtksdio.c
++++ b/drivers/bluetooth/btmtksdio.c
+@@ -1400,7 +1400,7 @@ static int btmtksdio_combo_setup(struct hci_dev *hdev)
+ 	combo->setup_status = ret ? ret : -EINPROGRESS;
+ 	if (ret)
+ 		complete_all(&combo->setup_done);
+-	dev_info(bdev->dev, "W103D: combo Bluetooth setup result=%d\n", ret);
++	dev_dbg(bdev->dev, "W103D: combo Bluetooth setup result=%d\n", ret);
+ 	mutex_unlock(&combo->transition);
+ 	return ret;
+ }
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index 9d8fd5bb1..f23cef5ff 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -747,7 +747,7 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
+ 	if (rocr & ocr & R4_18V_PRESENT) {
+ 		if (fixed_1_8v &&
+ 		    host->ios.signal_voltage == MMC_SIGNAL_VOLTAGE_180) {
+-			dev_info(mmc_dev(host),
++			dev_dbg(mmc_dev(host),
+ 				 "fixed 1.8V SDIO rail, skipping CMD11 voltage switch\n");
+ 			err = 0;
+ 		} else {
+diff --git a/drivers/mmc/host/meson-gx-mmc.c b/drivers/mmc/host/meson-gx-mmc.c
+index 6a157493b..c3cc983cd 100644
+--- a/drivers/mmc/host/meson-gx-mmc.c
++++ b/drivers/mmc/host/meson-gx-mmc.c
+@@ -553,7 +553,7 @@ static int meson_mmc_resampling_tuning(struct mmc_host *mmc, u32 opcode)
+ 		val |= ADJUST_ADJ_EN;
+ 		val |= FIELD_PREP(ADJUST_ADJ_DELAY_MASK, 3);
+ 		writel(val, host->regs + host->data->adjust);
+-		dev_info_once(host->dev,
++		dev_dbg(host->dev,
+ 			      "switched to SDIO transfer routing with vendor delay 3\n");
+ 		return 0;
+ 	}
+@@ -1239,7 +1239,7 @@ static int meson_mmc_probe(struct platform_device *pdev)
+ 	host->sdio_irq_fastpath = of_machine_is_compatible("zte,w103d") &&
+ 				  !host->dram_access_quirk;
+ 	if (host->sdio_irq_fastpath)
+-		dev_info(host->dev, "W103D: direct completion for copy-free SDIO requests\n");
++		dev_dbg(host->dev, "W103D: direct completion for copy-free SDIO requests\n");
+ 
+ 	ret = request_threaded_irq(host->irq, meson_mmc_irq,
+ 				   meson_mmc_irq_thread, IRQF_ONESHOT,
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_txrx.c b/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_txrx.c
+index 32f106193..8b5697456 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_txrx.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_txrx.c
+@@ -125,7 +125,7 @@ mt76s_rx_run_queue(struct mt76_dev *dev, enum mt76_rxq_id qid,
+ 	sdio_release_host(sdio->func);
+ 
+ 	if (err < 0) {
+-		dev_err(dev->dev, "sdio read data failed:%d\n", err);
++		dev_err_ratelimited(dev->dev, "sdio read data failed:%d\n", err);
+ 		put_page(page);
+ 		return err;
+ 	}
+@@ -200,7 +200,7 @@ static int mt76s_consume_intr(struct mt76_dev *dev, struct mt76s_intr *intr)
+ 	 * mistaken for RX packets or replayed on every pending iteration.
+ 	 */
+ 	if (sw)
+-		dev_warn_ratelimited(dev->dev,
++		dev_dbg_ratelimited(dev->dev,
+ 			"W103D: firmware interrupt %#x mailbox %#x/%#x\n",
+ 			sw, intr->rec_mb[0], intr->rec_mb[1]);
+ 	intr->isr &= WHIER_RX0_DONE_INT_EN | WHIER_RX1_DONE_INT_EN;
+@@ -304,7 +304,7 @@ static int __mt76s_xmit_queue(struct mt76_dev *dev, u8 *data, int len)
+ 	sdio_release_host(sdio->func);
+ 
+ 	if (err)
+-		dev_err(dev->dev, "sdio write failed: %d\n", err);
++		dev_err_ratelimited(dev->dev, "sdio write failed: %d\n", err);
+ 
+ 	return err;
+ }
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_w103d.c b/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_w103d.c
+index 0b2f81c93..dfc0ae90b 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_w103d.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7663s/mt7663s_w103d.c
+@@ -110,7 +110,7 @@ int mt7663s_w103d_init_intr(struct mt76_dev *mdev)
+ 	INIT_DELAYED_WORK(&state->quota_work, mt7663s_w103d_quota_work);
+ 	mdev->sdio.intr_data = state;
+ 
+-	dev_info(mdev->dev,
++	dev_dbg(mdev->dev,
+ 		 "W103D: preserving complete read-clear WHISR snapshots\n");
+ 
+ 	return 0;
+@@ -243,7 +243,7 @@ static void mt7663s_w103d_mailbox_backoff(struct mt76_dev *mdev)
+ 	 */
+ 	msleep(W103D_MAILBOX_BACKOFF_MS);
+ 	mt7663s_w103d_purge_stale_responses(mdev);
+-	dev_warn_ratelimited(mdev->dev,
++	dev_dbg_ratelimited(mdev->dev,
+ 		"W103D: mailbox timeout after %d ms, 1s backoff\n",
+ 		W103D_MAILBOX_TIMEOUT_MS);
+ }
+@@ -602,7 +602,7 @@ static int mt7663s_w103d_read_tx_quota(struct mt76_dev *mdev)
+ 	 */
+ 	credits = mt7663s_w103d_refill_quota(sdio, wtqcr);
+ 	if (err)
+-		dev_warn_ratelimited(mdev->dev, "W103D: WTQCR%d read failed: %d\n",
++		dev_dbg_ratelimited(mdev->dev, "W103D: WTQCR%d read failed: %d\n",
+ 				     i, err);
+ 
+ 	return err ? err : credits;
+@@ -674,7 +674,7 @@ void mt7663s_w103d_init_mac_work(struct mt7615_dev *dev)
+ 	ieee80211_queue_delayed_work(mphy->hw, &mphy->mac_work,
+ 				     mt7615_get_macwork_timeout(dev));
+ 
+-	dev_info(dev->mt76.dev,
++	dev_dbg(dev->mt76.dev,
+ 		 "W103D: mac_work replaced with lightweight TX-only callback\n");
+ }
+ 
+@@ -862,7 +862,7 @@ static void mt7663s_w103d_select_eeprom_source(struct mt76_dev *mdev,
+ 	*(__le16 *)(skb->data + 2) = 0;
+ 	skb_trim(skb, hdr_len);
+ 
+-	dev_info_ratelimited(mdev->dev,
++	dev_dbg_ratelimited(mdev->dev,
+ 			     "W103D: using firmware eFuse source for complete calibration\n");
+ }
+ 
+@@ -1148,7 +1148,7 @@ mt7663s_w103d_vendor_activate_sta(struct mt7615_dev *dev,
+ 	ret = mt76_mcu_send_msg(&dev->mt76,
+ 		MCU_CMD_VENDOR_SET(MCU_CMD_VENDOR_UPDATE_STA_RECORD),
+ 		&req, sizeof(req), true);
+-	dev_info(dev->mt76.dev,
++	dev_dbg(dev->mt76.dev,
+ 		 "W103D: vendor STA_STATE_3 idx=%u bss=%u wlan=%u ampdu=1/1 result=%d\n",
+ 		 req.sta_idx, req.bss_idx, req.wlan_idx, ret);
+ 
+@@ -1234,7 +1234,7 @@ static int mt7663s_w103d_sta_ba(struct mt7615_dev *dev,
+ 				    sta_wtbl, wtbl_hdr);
+ 	ret = mt76_mcu_skb_send_msg(&dev->mt76, skb,
+ 				    MCU_EXT_CMD(STA_REC_UPDATE), true);
+-	dev_info_ratelimited(dev->mt76.dev,
++	dev_dbg_ratelimited(dev->mt76.dev,
+ 		"W103D: %s BA %s tid=%u win=%u result=%d\n",
+ 		tx ? "TX" : "RX", enable ? "start" : "stop",
+ 		params->tid, params->buf_size, ret);
+@@ -1416,7 +1416,7 @@ void mt7663s_w103d_note_assoc(struct ieee80211_hw *hw,
+ 			BSS_CHANGED_ERP_PREAMBLE | BSS_CHANGED_ERP_CTS_PROT))) {
+ 		ret = mt7663s_w103d_sync_bss_rlm(dev, vif);
+ 		if (ret)
+-			dev_warn(dev->mt76.dev,
++			dev_dbg(dev->mt76.dev,
+ 				 "W103D: failed to sync BSS channel: %d\n", ret);
+ 	}
+ 
+@@ -1530,7 +1530,7 @@ void mt7663s_w103d_limit_vht80(struct mt7615_dev *dev)
+ 	vht_cap->cap &= ~(IEEE80211_VHT_CAP_SHORT_GI_160 |
+ 			  IEEE80211_VHT_CAP_SUPP_CHAN_WIDTH_MASK);
+ 
+-	dev_info(dev->mt76.dev,
++	dev_dbg(dev->mt76.dev,
+ 		 "W103D: limited MT7663S channel width to VHT80 (cap=0x%08x)\n",
+ 		 vht_cap->cap);
+ }
+@@ -1753,7 +1753,8 @@ mt7663s_w103d_tx_rate_val(struct mt76_phy *mphy,
+ 		rate_idx = val & 0xff;
+ 	}
+ 
+-	if (stbc && nss == 1) {
++	if (stbc && nss == 1 &&
++	    (rate->flags & (IEEE80211_TX_RC_MCS | IEEE80211_TX_RC_VHT_MCS))) {
+ 		nss++;
+ 		rateval |= MT_TX_RATE_STBC;
+ 	}
+@@ -1776,9 +1777,12 @@ mt7663s_w103d_fix_5g_tx_rate(struct mt7615_dev *dev,
+ 	u16 rateval;
+ 	u8 bw;
+ 
+-	if (!is_data) {
+-		/* Management/control traffic cannot fall back to the inaccessible
+-		 * WTBL rate table.  Index 0 is mandatory 6 Mbps OFDM on 5 GHz.
++	if (!is_data || (info->flags & IEEE80211_TX_CTL_USE_MINRATE)) {
++		/* mac80211 probes the AP after scanning with a minimum-rate Null
++		 * frame.  Overriding it with minstrel's data rate/retry count can
++		 * exhaust the connection probes and cause a local reason=4 drop.
++		 * Management/control/Null traffic cannot use the inaccessible WTBL
++		 * rate table either.  Index 0 is mandatory 6 Mbps OFDM on 5 GHz.
+ 		 */
+ 		rate.idx = 0;
+ 		rate.count = 8;
+@@ -1825,7 +1829,8 @@ mt7663s_w103d_fix_5g_tx_rate(struct mt7615_dev *dev,
+ 				 FIELD_PREP(MT_TXD6_TX_RATE, rateval));
+ 	if (rate.flags & IEEE80211_TX_RC_SHORT_GI)
+ 		txwi[6] |= cpu_to_le32(MT_TXD6_SGI);
+-	if (info->flags & IEEE80211_TX_CTL_LDPC)
++	if ((info->flags & IEEE80211_TX_CTL_LDPC) &&
++	    (rate.flags & (IEEE80211_TX_RC_MCS | IEEE80211_TX_RC_VHT_MCS)))
+ 		txwi[6] |= cpu_to_le32(MT_TXD6_LDPC);
+ }
+ 
+@@ -1836,8 +1841,8 @@ int mt7663s_w103d_tx_prepare_skb(struct mt76_dev *mdev, void *txwi_ptr,
+ {
+ 	struct mt7615_dev *dev = container_of(mdev, struct mt7615_dev, mt76);
+ 	struct ieee80211_hdr *hdr = (void *)tx_info->skb->data;
+-	bool is_data = ieee80211_is_data(hdr->frame_control);
+-	bool firmware_ba = ieee80211_is_data_qos(hdr->frame_control) &&
++	bool is_data = ieee80211_is_data_present(hdr->frame_control);
++	bool firmware_ba = is_data && ieee80211_is_data_qos(hdr->frame_control) &&
+ 		!is_multicast_ether_addr(hdr->addr1);
+ 	u32 sdio_len;
+ 	int ret;
+@@ -1920,7 +1925,7 @@ static int mt7663s_w103d_sdio_write(struct mt76_dev *mdev,
+ 	}
+ 
+ 	if (err)
+-		dev_err(mdev->dev, "W103D synchronous SDIO MCU write failed: %d\n",
++		dev_err_ratelimited(mdev->dev, "W103D synchronous SDIO MCU write failed: %d\n",
+ 			err);
+ 
+ 	return err;
+@@ -1940,7 +1945,7 @@ void mt7663s_w103d_purge_stale_responses(struct mt76_dev *mdev)
+ 	spin_unlock_bh(&res_q->lock);
+ 
+ 	if (count)
+-		dev_warn(mdev->dev,
++		dev_dbg(mdev->dev,
+ 			 "W103D: purged %d stale MCU response(s)\n", count);
+ }
+ 
+@@ -1968,7 +1973,7 @@ int mt7663s_w103d_mcu_send_message(struct mt76_dev *mdev,
+ 		msleep(1600);
+ 		mt7663s_w103d_purge_stale_responses(mdev);
+ 		state->eeprom_settle_pending = false;
+-		dev_info(mdev->dev,
++		dev_dbg(mdev->dev,
+ 			 "W103D: EEPROM settled, stale MCU responses purged\n");
+ 	}
+ 
+@@ -1999,9 +2004,6 @@ int mt7663s_w103d_mcu_send_message(struct mt76_dev *mdev,
+ 				req->ssids_num = 0;
+ 				req->probe_req_num = 0;
+ 				req->ssid_type_ext = 0;
+-				dev_dbg(mdev->dev,
+-					"W103D: active scan converted to passive (%u channels)\n",
+-					channels);
+ 			}
+ 			req->channel_dwell_time = 0;
+ 			req->channel_min_dwell_time = 0;
+@@ -2176,7 +2178,7 @@ bool mt7663s_w103d_rx_check(struct mt76_dev *mdev, void *data, int len)
+ 	type = FIELD_GET(MT_RXD0_PKT_TYPE, rxd0);
+ 
+ 	if (mt7663s_w103d_active() && type == PKT_TYPE_TXRX_NOTIFY) {
+-		dev_warn_once(mdev->dev,
++		dev_dbg(mdev->dev,
+ 			      "W103D: ignoring SDIO TXRX_NOTIFY without tx_cleanup\n");
+ 		return false;
+ 	}
+@@ -2199,7 +2201,7 @@ bool mt7663s_w103d_rx_check(struct mt76_dev *mdev, void *data, int len)
+ 
+ 		rxd1 |= FIELD_PREP(MT_RXD1_NORMAL_CH_FREQ, ch);
+ 		rxd[1] = cpu_to_le32(rxd1);
+-		dev_info_ratelimited(mdev->dev,
++		dev_dbg_ratelimited(mdev->dev,
+ 			"W103D: filled missing scan RX channel %u\n",
+ 			ch);
+ 	}
+@@ -2271,7 +2273,7 @@ mt7663s_w103d_handle_rx_ba_event(struct mt76_dev *mdev, struct sk_buff *skb)
+ 			ret = mt76_rx_aggr_start(mdev, wcid, tid, ssn, win_size);
+ 		mutex_unlock(&mdev->mutex);
+ 
+-		dev_info_ratelimited(mdev->dev,
++		dev_dbg_ratelimited(mdev->dev,
+ 			"W103D: firmware RX BA start wcid=%u tid=%u ssn=%u win=%u result=%d\n",
+ 			wcid_idx, tid, ssn, win_size, ret);
+ 	} else {
+@@ -2294,7 +2296,7 @@ mt7663s_w103d_handle_rx_ba_event(struct mt76_dev *mdev, struct sk_buff *skb)
+ 			ret = -ENOENT;
+ 		mutex_unlock(&mdev->mutex);
+ 
+-		dev_info_ratelimited(mdev->dev,
++		dev_dbg_ratelimited(mdev->dev,
+ 			"W103D: firmware RX BA stop wcid=%u tid=%u result=%d\n",
+ 			wcid_idx, tid, ret);
+ 	}
+@@ -2303,7 +2305,7 @@ mt7663s_w103d_handle_rx_ba_event(struct mt76_dev *mdev, struct sk_buff *skb)
+ 	return true;
+ 
+ malformed:
+-	dev_warn_ratelimited(mdev->dev,
++	dev_dbg_ratelimited(mdev->dev,
+ 			     "W103D: malformed firmware RX BA event eid=%u len=%u\n",
+ 			     rxd->eid, skb->len);
+ 	dev_kfree_skb(skb);
+diff --git a/drivers/net/wireless/mediatek/mt76/mt7663s/sdio.c b/drivers/net/wireless/mediatek/mt76/mt7663s/sdio.c
+index 8dbc9b5e6..fec3d4f91 100644
+--- a/drivers/net/wireless/mediatek/mt76/mt7663s/sdio.c
++++ b/drivers/net/wireless/mediatek/mt76/mt7663s/sdio.c
+@@ -127,7 +127,7 @@ mt7663s_w103d_ampdu_action(struct ieee80211_hw *hw,
+ 		break;
+ 	}
+ 
+-	dev_info_ratelimited(dev->mt76.dev,
++	dev_dbg_ratelimited(dev->mt76.dev,
+ 		"W103D: AMPDU action=%u tid=%u ssn=%u result=%d\n",
+ 		params->action, tid, params->ssn, ret);
+ 	mt7615_mutex_release(dev);
+@@ -300,7 +300,7 @@ static int mt7663s_probe(struct sdio_func *func,
+ 		if (ret)
+ 			goto error;
+ 
+-		dev_info(mdev->dev,
++		dev_dbg(mdev->dev,
+ 			 "W103D: enabled vendor 16-entry RX enhance mode\n");
+ 	}
+ 
+@@ -390,7 +390,7 @@ static void mt7663s_remove(struct sdio_func *func)
+ 	ieee80211_unregister_hw(dev->mt76.hw);
+ 	if (mt7663s_w103d_active() && running && !combo_ret) {
+ 		ret = mt7663s_w103d_mcu_restart(&dev->mt76);
+-		dev_info(&func->dev, "W103D: firmware exit result=%d\n", ret);
++		dev_dbg(&func->dev, "W103D: firmware exit result=%d\n", ret);
+ 		clear_bit(MT76_STATE_MCU_RUNNING, &dev->mphy.state);
+ 		skb_queue_purge(&dev->mt76.mcu.res_q);
+ 	}
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 74524e279..cc8bc053f 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -785,11 +785,14 @@ ieee80211_tx_h_rate_ctrl(struct ieee80211_tx_data *tx)
+ 		tx->rate = info->control.rates[0];
+ 	}
+ 
+-	if (txrc.reported_rate.idx < 0) {
++	if (txrc.reported_rate.idx < 0)
+ 		txrc.reported_rate = tx->rate;
+-		if (tx->sta && ieee80211_is_tx_data(tx->skb))
+-			tx->sta->deflink.tx_stats.last_rate = txrc.reported_rate;
+-	} else if (tx->sta)
++
++	/* Null/QoS Null connection probes deliberately use a basic rate.
++	 * Keep the station's data bitrate from being replaced by these
++	 * non-payload frames, including probes sent after a scan.
++	 */
++	if (tx->sta && (encap || ieee80211_is_data_present(hdr->frame_control)))
+ 		tx->sta->deflink.tx_stats.last_rate = txrc.reported_rate;
+ 
+ 	if (ratetbl)

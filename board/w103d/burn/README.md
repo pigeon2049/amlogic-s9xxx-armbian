@@ -1,4 +1,27 @@
-# W103D experimental USB Burning Tool image
+# W103D USB Burning Tool images
+
+Production server recipe (6.18.52, mainline U-Boot chainload, board-tested):
+`assemble.sh` in this directory. Base must already carry the matched 6.18.52
+kernel tree; vendor DDR/FIP/logo partitions pass through byte-identical
+(secure-boot: no re-signing, no bootstrap patching). Differences from the
+bootstrap lineage below: `u-boot.ext` + `bootup.bmp` on bootfs, production
+`emmc_autoscript.cmd` (chainload first, vendor fallback), W103D `uEnv.txt`
+paths, `verify_image.py --release 6.18.52-ophub`.
+
+```sh
+bash board/w103d/burn/assemble.sh \
+  /work/Armbian_6.18.52_base.img.gz /work/assembled \
+  /work/reference-unpacked /work/khadas-tools \
+  /work/u-boot.ext /work/bootup.bmp
+```
+
+`verify_package.py` / `test_bootstrap.py` belong to the bootstrap lineage
+only and do not apply to the production flow (no patched `boot.PARTITION`,
+no rebuilt logo). Production verification: packer container check, sparse
+round-trip, and FAT extraction checks (autoscript CRC/LF, `u-boot.ext` SHA,
+BMP match) — see the 6.18.52 deliverable's `checks/`.
+
+Legacy desktop/bootstrap history below (frozen).
 
 Current desktop recipe: [KDE v8](v8-README.md).
 Shared W103D/W102D bootstrap: [capacity fix and unified build](unified-capacity.md).
