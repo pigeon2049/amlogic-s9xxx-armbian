@@ -1,7 +1,10 @@
 # W103D USB Burning Tool images
 
 Production server recipe (6.18.52, mainline U-Boot chainload, board-tested):
-`assemble.sh` in this directory. Base must already carry the matched 6.18.52
+`assemble.sh` in this directory. It also covers W102D: the two boxes are
+identical except eMMC capacity (32 GB vs 16 GB), and first-boot
+`w103d-resize-rootfs` adapts `W103D_ROOT` to the actual flashed size,
+so no separate W102D branch or image is needed. Base must already carry the matched 6.18.52
 kernel tree; vendor DDR/FIP/logo partitions pass through byte-identical
 (secure-boot: no re-signing, no bootstrap patching). Differences from the
 bootstrap lineage below: `u-boot.ext` + `bootup.bmp` on bootfs, production
