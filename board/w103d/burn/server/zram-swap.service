@@ -1,0 +1,13 @@
+[Unit]
+Description=ZRAM swap (50% RAM, zstd)
+After=local-fs.target
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/zram-swap-start.sh
+ExecStop=/usr/local/sbin/zram-swap-stop.sh
+
+[Install]
+WantedBy=multi-user.target

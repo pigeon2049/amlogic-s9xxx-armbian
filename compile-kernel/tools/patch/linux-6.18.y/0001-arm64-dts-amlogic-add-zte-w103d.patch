@@ -24,10 +24,10 @@ index 4f4e3c8..1e80fb4 100644
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-g12a-w103d.dts b/arch/arm64/boot/dts/amlogic/meson-g12a-w103d.dts
 new file mode 100644
-index 0000000..680ab67
+index 0000000..080b3b1
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-g12a-w103d.dts
-@@ -0,0 +1,637 @@
+@@ -0,0 +1,697 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Device tree for the ZTE W103D set-top box.
@@ -65,13 +65,20 @@ index 0000000..680ab67
 +		reg = <0x0 0x0 0x0 0x80000000>;
 +	};
 +
-+	cvbs-connector {
-+		compatible = "composite-video-connector";
++	/*
++	 * No CVBS connector: the box has no composite jack, and with HDMI
++	 * unplugged fbcon fell back to Composite-1, whose VENC never raises
++	 * vblank, stalling every console write for 10 s and boot past 200 s.
++	 */
 +
-+		port {
-+			cvbs_connector_in: endpoint {
-+				remote-endpoint = <&cvbs_vdac_out>;
-+			};
++	reserved-memory {
++		/* Same ramoops window as the vendor Android tree. */
++		ramoops@7400000 {
++			compatible = "ramoops";
++			reg = <0x0 0x07400000 0x0 0x100000>;
++			record-size = <0x8000>;
++			console-size = <0x8000>;
++			ftrace-size = <0x40000>;
 +		};
 +	};
 +
@@ -343,10 +350,61 @@ index 0000000..680ab67
 +	clocks = <&clkc CLKID_CPU_CLK>;
 +};
 +
-+&cvbs_vdac_port {
-+	cvbs_vdac_out: endpoint {
-+		remote-endpoint = <&cvbs_connector_in>;
++/*
++ * CPU voltages follow the vendor Android tree (cpu_opp_table0). Mainline
++ * runs 1.2-1.7 GHz 30-60 mV lower; one board panicked at those points
++ * while staying stable on the vendor table. The VDDCPU PWM mapping
++ * (AO_D, 1250 ns, 1022 mV at 0 % to 721 mV at 100 %) matches the vendor's.
++ */
++&cpu_opp_table {
++	opp-100000000 {
++		opp-hz = /bits/ 64 <100000000>;
++		opp-microvolt = <731000>;
 +	};
++
++	opp-250000000 {
++		opp-hz = /bits/ 64 <250000000>;
++		opp-microvolt = <731000>;
++	};
++
++	opp-500000000 {
++		opp-hz = /bits/ 64 <500000000>;
++		opp-microvolt = <731000>;
++	};
++
++	opp-667000000 {
++		opp-hz = /bits/ 64 <666666666>;
++		opp-microvolt = <731000>;
++	};
++
++	opp-1200000000 {
++		opp-microvolt = <761000>;
++	};
++
++	opp-1398000000 {
++		opp-microvolt = <791000>;
++	};
++
++	opp-1512000000 {
++		opp-microvolt = <831000>;
++	};
++
++	opp-1608000000 {
++		opp-microvolt = <871000>;
++	};
++
++	opp-1704000000 {
++		opp-microvolt = <921000>;
++	};
++};
++
++/* Vendor trips: throttle at 75 C, hot at 85 C; critical stays at 110 C. */
++&cpu_passive {
++	temperature = <75000>;
++};
++
++&cpu_hot {
++	temperature = <85000>;
 +};
 +
 +&ethmac {
@@ -608,16 +666,18 @@ index 0000000..680ab67
 +	status = "okay";
 +};
 +
-+/* 32 GiB onboard eMMC. */
++/*
++ * 16/32 GiB onboard eMMC. Like the vendor tree (caps2 HS200, f_max 50 MHz),
++ * HS200 timing is capped at 50 MHz for margin on weaker boards.
++ */
 +&sd_emmc_c {
 +	pinctrl-0 = <&emmc_ctrl_pins>, <&emmc_data_8b_pins>, <&emmc_ds_pins>;
 +	pinctrl-1 = <&emmc_clk_gate_pins>;
 +	pinctrl-names = "default", "clk-gate";
 +	bus-width = <8>;
 +	cap-mmc-highspeed;
-+	mmc-ddr-1_8v;
 +	mmc-hs200-1_8v;
-+	max-frequency = <200000000>;
++	max-frequency = <50000000>;
 +	non-removable;
 +	disable-wp;
 +	mmc-pwrseq = <&emmc_pwrseq>;

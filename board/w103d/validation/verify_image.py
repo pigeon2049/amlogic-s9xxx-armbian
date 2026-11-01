@@ -31,7 +31,12 @@ def verify(rootfs, bootfs=None, release=None):
     image = (bootfs / 'zImage').read_bytes()
     if image[56:60] != b'ARM\x64' or ('Linux version ' + release + ' ').encode() not in image:
         raise RuntimeError('W103D Image header/release does not match target')
-    if b'direct completion for copy-free SDIO requests' not in image:
+    # <= 6.18.52 printed a W103D-only completion message. Upstream 62a25cd7
+    # (2026-10-21) made the SDIO IRQ fast path unconditional and dropped it, so
+    # newer kernels are recognised by the W103D SDIO transfer routing message
+    # (kept by CONFIG_DYNAMIC_DEBUG) from the same meson-gx-mmc lineage.
+    if (b'direct completion for copy-free SDIO requests' not in image and
+            b'switched to SDIO transfer routing with vendor delay 3' not in image):
         raise RuntimeError('W103D Image lacks the tested Meson MMC completion path')
     dtb = bootfs / 'dtb/amlogic/meson-g12a-w103d.dtb'
     if not dtb.is_file() or b'zte,w103d\0' not in dtb.read_bytes():

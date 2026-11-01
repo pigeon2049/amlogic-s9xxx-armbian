@@ -1,6 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-2.0-only
-# Assemble the W103D 6.18.52 production USB Burning Tool image
+# Assemble the W103D production USB Burning Tool image (kernel release and
+# Armbian version are read from the base image)
 # (mainline U-Boot chainload). No board I/O.
 #
 # Verified production flow (board-tested 2026-09-20):
@@ -48,6 +49,15 @@ mkdir -p "$work/base-boot"
 mount -o ro "${loop}p1" "$work/base-boot"
 cp -r "$work/base-boot/." "$work/boot/"
 umount "$work/base-boot"
+release=$(cd "$work/boot" && ls vmlinuz-*-ophub)
+release=${release#vmlinuz-}
+[[ $release =~ ^[0-9]+\.[0-9]+\.[0-9]+-ophub$ ]]
+# W103D boot contract (uEnv.txt and the vendor fallback in emmc_autoscript):
+# /zImage, /ramdisk-w103d.img (uImage-wrapped initrd), /dtb-w103d/<dtb>.
+cmp "$work/boot/zImage" "$work/boot/vmlinuz-$release"
+mkimage -A arm64 -O linux -T ramdisk -C gzip -n ramdisk-w103d -d "$work/boot/initrd.img-$release" "$work/boot/ramdisk-w103d.img" > "$work/checks/ramdisk.log"
+mkdir -p "$work/boot/dtb-w103d"
+cp "$work/boot/dtb/amlogic/meson-g12a-w103d.dtb" "$work/boot/dtb-w103d/meson-g12a-w103d.dtb"
 # Chainload U-Boot (mainline) + HDMI logo + production autoscript.
 cp "$ubootext" "$work/boot/u-boot.ext"
 cp "$bootupbmp" "$work/boot/bootup.bmp"
@@ -57,7 +67,7 @@ cat > "$work/boot/uEnv.txt" <<'EOF'
 LINUX=/zImage
 INITRD=/ramdisk-w103d.img
 FDT=/dtb-w103d/meson-g12a-w103d.dtb
-APPEND=root=LABEL=W103D_ROOT rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 net.ifnames=0 fsck.repair=yes
+APPEND=root=LABEL=W103D_ROOT rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 net.ifnames=0 fsck.repair=yes video=Composite-1:d panic=10
 EOF
 cat > "$work/root/etc/fstab" <<'EOF'
 LABEL=W103D_ROOT / ext4 defaults,noatime,errors=remount-ro 0 1
@@ -70,6 +80,36 @@ install -D -m755 "$scripts/resize-rootfs.sh" "$work/root/usr/local/sbin/w103d-re
 install -D -m644 "$scripts/resize-rootfs.service" "$work/root/etc/systemd/system/w103d-resize-rootfs.service"
 mkdir -p "$work/root/etc/systemd/system/multi-user.target.wants"
 ln -s ../w103d-resize-rootfs.service "$work/root/etc/systemd/system/multi-user.target.wants/w103d-resize-rootfs.service"
+# Headless eMMC server tuning (matches the deployed boxes).
+units="$work/root/etc/systemd/system"
+server="$scripts/server"
+mask() { for u in "$@"; do rm -f "$units"/*.wants/"$u"; ln -sfn /dev/null "$units/$u"; done; }
+# One zram swap instead of armbian-zram-config's swap+ramlog+tmp devices;
+# no ramlog so the journal survives crashes; 2 GiB eMMC swapfile at first boot.
+mask armbian-zram-config.service armbian-ramlog.service
+sed -i 's/^ENABLED=.*/ENABLED=false/' "$work/root/etc/default/armbian-zram-config" "$work/root/etc/default/armbian-ramlog"
+install -D -m755 "$server/zram-swap-start.sh" "$work/root/usr/local/sbin/zram-swap-start.sh"
+install -D -m755 "$server/zram-swap-stop.sh" "$work/root/usr/local/sbin/zram-swap-stop.sh"
+install -D -m644 "$server/zram-swap.service" "$units/zram-swap.service"
+install -D -m755 "$scripts/desktop/swapfile.sh" "$work/root/usr/local/sbin/w103d-swapfile"
+install -D -m644 "$server/swapfile.service" "$units/w103d-swapfile.service"
+ln -s ../zram-swap.service "$units/multi-user.target.wants/zram-swap.service"
+ln -s ../w103d-swapfile.service "$units/multi-user.target.wants/w103d-swapfile.service"
+# Persistent journal only; no plymouth splash on a headless box.
+install -D -m644 "$server/journald.conf" "$work/root/etc/systemd/journald.conf.d/90-w103d.conf"
+mkdir -p "$work/root/var/log/journal"
+rm -f "$units/syslog.service"
+mask rsyslog.service plymouth-start.service plymouth-read-write.service plymouth-quit.service plymouth-quit-wait.service
+# No NFS/RPC listeners, no unattended upgrades of the matched kernel set.
+mask rpcbind.service rpcbind.socket nfs-blkmap.service unattended-upgrades.service
+# systemd owns /dev/watchdog (meson-gxbb-wdt); keep the watchdog daemon off it.
+mask watchdog.service wd_keepalive.service
+install -D -m644 "$server/watchdog.conf" "$work/root/etc/systemd/system.conf.d/90-w103d-watchdog.conf"
+# Unique hostname from the Wi-Fi MAC once wlan0 appears.
+install -D -m755 "$server/hostname.sh" "$work/root/usr/local/sbin/w103d-hostname"
+install -D -m644 "$server/hostname.service" "$units/w103d-hostname.service"
+mkdir -p "$units/sys-subsystem-net-devices-wlan0.device.wants"
+ln -s ../w103d-hostname.service "$units/sys-subsystem-net-devices-wlan0.device.wants/w103d-hostname.service"
 # Rebuild input is a pristine official image. Drop per-image machine identity.
 : > "$work/root/etc/machine-id"
 rm -f "$work/root/var/lib/dbus/machine-id"
@@ -77,7 +117,9 @@ ln -s /etc/machine-id "$work/root/var/lib/dbus/machine-id"
 find "$work/root/etc/ssh" -maxdepth 1 -name 'ssh_host_*' -type f -delete
 install -D -m644 "$scripts/ssh-hostkeys.conf" "$work/root/etc/systemd/system/ssh.service.d/10-w103d-hostkeys.conf"
 sed -i 's/^OPENSSHD_REGENERATE_HOST_KEYS=.*/OPENSSHD_REGENERATE_HOST_KEYS=false/' "$work/root/etc/default/armbian-firstrun"
-python3 "$board/validation/verify_image.py" --rootfs "$work/root" --bootfs "$work/boot" --release 6.18.52-ophub | tee "$work/checks/components.log"
+armbian_version=$(. "$work/root/etc/armbian-release" && echo "$VERSION")
+codename=$(. "$work/root/etc/os-release" && echo "$VERSION_CODENAME")
+python3 "$board/validation/verify_image.py" --rootfs "$work/root" --bootfs "$work/boot" --release "$release" | tee "$work/checks/components.log"
 sync
 umount "$work/root" "$work/boot"
 losetup -d "$bootloop";bootloop=''
@@ -107,7 +149,7 @@ file="system.PARTITION" main_type="PARTITION" sub_type="system" file_type="spars
 file="data.PARTITION" main_type="PARTITION" sub_type="data" file_type="sparse"
 file="DDR.USB" main_type="PARTITION" sub_type="bootloader" file_type="normal"
 EOF
-name=W103D_Armbian_26.8.1_6.18.52_Server_MainlineUboot.burn.img
+name=W103D_Armbian_${armbian_version}_${codename}_${release%-ophub}_Server_MainlineUboot.burn.img
 "$tools/aml_image_v2_packer_new" -r "$work/payloads/image.cfg" "$work/payloads" "$work/$name" > "$work/checks/pack.log" 2>&1
 "$tools/aml_image_v2_packer_new" -c "$work/$name" > "$work/checks/container-integrity.log" 2>&1
 sha256sum "$work/$name" > "$work/$name.sha256"

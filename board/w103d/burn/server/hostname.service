@@ -1,0 +1,11 @@
+[Unit]
+Description=W103D hostname from Wi-Fi MAC
+After=sys-subsystem-net-devices-wlan0.device
+ConditionPathExists=!/var/lib/w103d/hostname-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/w103d-hostname
+
+[Install]
+WantedBy=sys-subsystem-net-devices-wlan0.device
