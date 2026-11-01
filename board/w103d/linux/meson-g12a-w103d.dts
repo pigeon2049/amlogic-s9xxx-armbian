@@ -41,17 +41,6 @@
 	 * vblank, stalling every console write for 10 s and boot past 200 s.
 	 */
 
-	reserved-memory {
-		/* Same ramoops window as the vendor Android tree. */
-		ramoops@7400000 {
-			compatible = "ramoops";
-			reg = <0x0 0x07400000 0x0 0x100000>;
-			record-size = <0x8000>;
-			console-size = <0x8000>;
-			ftrace-size = <0x40000>;
-		};
-	};
-
 	emmc_pwrseq: emmc-pwrseq {
 		compatible = "mmc-pwrseq-emmc";
 		reset-gpios = <&gpio BOOT_12 GPIO_ACTIVE_LOW>;
@@ -321,9 +310,9 @@
 };
 
 /*
- * CPU voltages follow the vendor Android tree (cpu_opp_table0). Mainline
- * runs 1.2-1.7 GHz 30-60 mV lower; one board panicked at those points
- * while staying stable on the vendor table. The VDDCPU PWM mapping
+ * CPU operating points follow the vendor Android tree (cpu_opp_table0):
+ * its 100-667 MHz points let an idle box clock down, and 1.2-1.7 GHz run
+ * 30-60 mV above mainline for margin across boards. The VDDCPU PWM mapping
  * (AO_D, 1250 ns, 1022 mV at 0 % to 721 mV at 100 %) matches the vendor's.
  */
 &cpu_opp_table {

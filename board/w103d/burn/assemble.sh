@@ -67,7 +67,7 @@ cat > "$work/boot/uEnv.txt" <<'EOF'
 LINUX=/zImage
 INITRD=/ramdisk-w103d.img
 FDT=/dtb-w103d/meson-g12a-w103d.dtb
-APPEND=root=LABEL=W103D_ROOT rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 net.ifnames=0 fsck.repair=yes video=Composite-1:d panic=10
+APPEND=root=LABEL=W103D_ROOT rw rootwait rootfstype=ext4 console=ttyAML0,115200n8 console=tty0 net.ifnames=0 fsck.repair=yes video=Composite-1:d plymouth.enable=0
 EOF
 cat > "$work/root/etc/fstab" <<'EOF'
 LABEL=W103D_ROOT / ext4 defaults,noatime,errors=remount-ro 0 1
@@ -75,6 +75,11 @@ LABEL=W103D_BOOT /boot vfat defaults 0 2
 tmpfs /tmp tmpfs defaults,nosuid 0 0
 EOF
 echo no > "$work/root/root/.no_rootfs_resize"
+# Boot straight to a usable system (root/1234 like the deployed boxes) instead
+# of Armbian's interactive first-login wizard on console and SSH.
+rm -f "$work/root/root/.not_logged_in_yet"
+# Headless server: boot to multi-user, not Debian's default graphical.target.
+ln -sfn /usr/lib/systemd/system/multi-user.target "$work/root/etc/systemd/system/default.target"
 sed -i "s/DISK_TYPE='usb'/DISK_TYPE='emmc'/" "$work/root/etc/ophub-release"
 install -D -m755 "$scripts/resize-rootfs.sh" "$work/root/usr/local/sbin/w103d-resize-rootfs"
 install -D -m644 "$scripts/resize-rootfs.service" "$work/root/etc/systemd/system/w103d-resize-rootfs.service"
@@ -95,16 +100,15 @@ install -D -m755 "$scripts/desktop/swapfile.sh" "$work/root/usr/local/sbin/w103d
 install -D -m644 "$server/swapfile.service" "$units/w103d-swapfile.service"
 ln -s ../zram-swap.service "$units/multi-user.target.wants/zram-swap.service"
 ln -s ../w103d-swapfile.service "$units/multi-user.target.wants/w103d-swapfile.service"
-# Persistent journal only; no plymouth splash on a headless box.
+# Persistent journal only. Plymouth is disabled by plymouth.enable=0 in
+# uEnv.txt; do not mask its units: the initramfs still starts plymouthd, and
+# masking plymouth-quit left it holding tty1 (no echo, no output) forever.
 install -D -m644 "$server/journald.conf" "$work/root/etc/systemd/journald.conf.d/90-w103d.conf"
 mkdir -p "$work/root/var/log/journal"
 rm -f "$units/syslog.service"
-mask rsyslog.service plymouth-start.service plymouth-read-write.service plymouth-quit.service plymouth-quit-wait.service
+mask rsyslog.service
 # No NFS/RPC listeners, no unattended upgrades of the matched kernel set.
 mask rpcbind.service rpcbind.socket nfs-blkmap.service unattended-upgrades.service
-# systemd owns /dev/watchdog (meson-gxbb-wdt); keep the watchdog daemon off it.
-mask watchdog.service wd_keepalive.service
-install -D -m644 "$server/watchdog.conf" "$work/root/etc/systemd/system.conf.d/90-w103d-watchdog.conf"
 # Unique hostname from the Wi-Fi MAC once wlan0 appears.
 install -D -m755 "$server/hostname.sh" "$work/root/usr/local/sbin/w103d-hostname"
 install -D -m644 "$server/hostname.service" "$units/w103d-hostname.service"
