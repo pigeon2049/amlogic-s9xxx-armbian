@@ -110,6 +110,15 @@ install -D -m755 "$server/hostname.sh" "$work/root/usr/local/sbin/w103d-hostname
 install -D -m644 "$server/hostname.service" "$units/w103d-hostname.service"
 mkdir -p "$units/sys-subsystem-net-devices-wlan0.device.wants"
 ln -s ../w103d-hostname.service "$units/sys-subsystem-net-devices-wlan0.device.wants/w103d-hostname.service"
+# Drop firmware no driver on this board can load: Qualcomm SoC blobs, PCIe-only
+# Wi-Fi (ath11k/ath12k/iwlwifi are built as PCI drivers) and other boxes' SDIO
+# Wi-Fi. No USB driver module declares a file under these paths; ath10k stays
+# for ath10k_usb. Kernel headers stay for DKMS-built USB drivers.
+fw="$work/root/usr/lib/firmware"
+rm -rf "$fw"/qcom "$fw"/adsp.* "$fw"/ath11k "$fw"/ath12k "$fw"/iwlwifi-* \
+    "$fw"/rkwifi "$fw"/ap6212 "$fw"/aic8800 "$fw"/uwe5622
+# APT indexes are rebuilt by the first apt update.
+find "$work/root/var/lib/apt/lists" -mindepth 1 -maxdepth 1 -type f -delete
 # Rebuild input is a pristine official image. Drop per-image machine identity.
 : > "$work/root/etc/machine-id"
 rm -f "$work/root/var/lib/dbus/machine-id"
@@ -121,6 +130,8 @@ armbian_version=$(. "$work/root/etc/armbian-release" && echo "$VERSION")
 codename=$(. "$work/root/etc/os-release" && echo "$VERSION_CODENAME")
 python3 "$board/validation/verify_image.py" --rootfs "$work/root" --bootfs "$work/boot" --release "$release" | tee "$work/checks/components.log"
 sync
+# Zero freed blocks (loop discard punches holes) so the sparse image skips them.
+fstrim -v "$work/root" > "$work/checks/rootfs-fstrim.log"
 umount "$work/root" "$work/boot"
 losetup -d "$bootloop";bootloop=''
 losetup -d "$loop";loop=''
