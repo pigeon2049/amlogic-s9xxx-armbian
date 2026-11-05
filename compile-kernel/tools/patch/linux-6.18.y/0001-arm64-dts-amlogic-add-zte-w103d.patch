@@ -24,10 +24,10 @@ index 4f4e3c8..1e80fb4 100644
  dtb-$(CONFIG_ARCH_MESON) += meson-g12b-a311d-bananapi-m2s.dtb
 diff --git a/arch/arm64/boot/dts/amlogic/meson-g12a-w103d.dts b/arch/arm64/boot/dts/amlogic/meson-g12a-w103d.dts
 new file mode 100644
-index 0000000..153437e
+index 0000000..f6f8458
 --- /dev/null
 +++ b/arch/arm64/boot/dts/amlogic/meson-g12a-w103d.dts
-@@ -0,0 +1,686 @@
+@@ -0,0 +1,699 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Device tree for the ZTE W103D set-top box.
@@ -394,6 +394,19 @@ index 0000000..153437e
 +
 +&cpu_hot {
 +	temperature = <85000>;
++};
++
++/*
++ * Throttle the GPU with the CPU at the passive trip, as the vendor tree does.
++ * The common G12 map only cools the GPU when DDR reaches 85 C.
++ */
++&cpu_thermal {
++	cooling-maps {
++		map2 {
++			trip = <&cpu_passive>;
++			cooling-device = <&mali THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++		};
++	};
 +};
 +
 +&ethmac {
