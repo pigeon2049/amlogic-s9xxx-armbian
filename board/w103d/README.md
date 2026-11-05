@@ -1,6 +1,6 @@
 # ZTE W103D board support
 
-This port targets the ZTE W103D (Amlogic S905L3A/G12A, 2 GiB RAM,
+This port targets the ZTE W103D (Amlogic S905X2/G12A, 2 GiB RAM,
 32 GiB eMMC) with Linux 6.18.52 (production; 6.12.107 retired 2026-09-20,
 rollback stays on-board only, rebuild inputs removed).
 It provides a standalone board DTS,
@@ -131,7 +131,7 @@ The 6.18.52 server line is the production deliverable (board-tested
 burn assembly in [burn/assemble.sh](burn/assemble.sh), U-Boot port notes in
 [uboot/README.md](uboot/README.md). The box has eFuse secure-boot, so the
 vendor FIP passes through untouched and mainline U-Boot chainloads from
-`u-boot.ext`. Canonical board identity: `BOARD=s905l3a-w103d`,
+`u-boot.ext`. Canonical board identity: `BOARD=w103d` (upstream build: `s905x2-w103d`),
 FDT `meson-g12a-w103d.dtb` (`/dtb-w103d/`), model `ZTE W103D`.
 
 ## Validation on 2026-09-05 (6.12 lineage, retired)

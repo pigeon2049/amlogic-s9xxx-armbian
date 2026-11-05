@@ -13,7 +13,7 @@ PATTERNS = ('armbian-bsp-*', 'armbian-firmware*', 'linux-image-*',
 def main():
     root = pathlib.Path(sys.argv[1]).resolve(strict=True)
     release = (root / 'etc/armbian-release').read_text()
-    if not any(line in ('BOARD=w103d', 'BOARD="w103d"') for line in release.splitlines()):
+    if not any(line in ('BOARD=w103d', 'BOARD="w103d"', 'BOARD=s905x2-w103d', 'BOARD="s905x2-w103d"') for line in release.splitlines()):
         raise SystemExit('Expected a prepared W103D root; refusing another board.')
     if not (root / 'usr/lib/modules/6.18.49-ophub').is_dir():
         raise SystemExit('Expected the matched 6.18.49-ophub module tree.')
